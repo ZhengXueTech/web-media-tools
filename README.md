@@ -31,10 +31,10 @@
 ### 線上體驗
 每個工具都可以直接在瀏覽器中使用：
 
-- [攝像頭計時錄影器 Demo](https://your-username.github.io/web-media-tools/camera-timer-recorder/)
-- [螢幕錄影工具 Demo](https://your-username.github.io/web-media-tools/screen-recorder/)
-- [螢幕截圖工具 Demo](https://your-username.github.io/web-media-tools/screenshot-tool/)
-- [影片裁切工具 Demo](https://your-username.github.io/web-media-tools/video-crop-tool/)
+- [攝像頭計時錄影器 Demo](https://ZhengXueTech.github.io/web-media-tools/camera-timer-recorder/)
+- [螢幕錄影工具 Demo](https://ZhengXueTech.github.io/web-media-tools/screen-recorder/)
+- [螢幕截圖工具 Demo](https://ZhengXueTech.github.io/web-media-tools/screenshot-tool/)
+- [影片裁切工具 Demo](https://ZhengXueTech.github.io/web-media-tools/video-crop-tool/)
 
 ### 本地運行
 ```bash
