@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錄影計時器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .setup-section {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+            width: 80px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+        
+        .start-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #da190b);
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+        
+        .timer-display {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 30px 0;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status {
+            font-size: 1.3em;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            min-height: 20px;
+        }
+        
+        .status.waiting {
+            background: linear-gradient(45deg, #e3f2fd, #bbdefb);
+            color: #1976d2;
+            border: 2px solid #2196f3;
+        }
+        
+        .status.preparing {
+            background: linear-gradient(45deg, #fff3e0, #ffcc02);
+            color: #f57c00;
+            border: 2px solid #ff9800;
+            animation: pulse 1s infinite;
+        }
+        
+        .status.recording {
+            background: linear-gradient(45deg, #ffebee, #ef5350);
+            color: #c62828;
+            border: 2px solid #f44336;
+            animation: pulse 1s infinite;
+        }
+        
+        .status.finished {
+            background: linear-gradient(45deg, #e8f5e8, #4caf50);
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .video-container {
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        video {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            background: #000;
+            min-height: 300px;
+        }
+        
+        canvas {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            background: #000;
+            min-height: 300px;
+        }
+        
+        .recording-indicator {
+            display: none;
+            background: #f44336;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+        
+        .download-section {
+            margin-top: 20px;
+        }
+        
+        .download-btn {
+            background: linear-gradient(45deg, #2196f3, #0d47a1);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .error {
+            color: #f44336;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 錄影計時器</h1>
+        
+        <div class="setup-section">
+            <div class="input-group">
+                <label for="minutes">分鐘:</label>
+                <input type="number" id="minutes" min="0" max="10" value="1">
+                
+                <label for="seconds">秒鐘:</label>
+                <input type="number" id="seconds" min="0" max="59" value="0">
+            </div>
+            
+            <div class="input-group">
+                <label for="showTimer">
+                    <input type="checkbox" id="showTimer" checked>
+                    在錄影中顯示倒數數字
+                </label>
+            </div>
+            
+            <button class="start-btn" id="startBtn" onclick="startTimer()" disabled>初始化攝像頭中...</button>
+            <button class="stop-btn" id="stopBtn" onclick="stopRecording()" style="display: none;">停止錄影</button>
+        </div>
+        
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        
+        <div class="status waiting" id="status">正在初始化攝像頭...</div>
+        
+        <div class="recording-indicator" id="recordingIndicator">🔴 錄影中</div>
+        
+        <div class="video-container">
+            <video id="video" autoplay muted playsinline controls></video>
+            <canvas id="recordingCanvas" style="display: none;"></canvas>
+        </div>
+        
+        <div class="download-section" id="downloadSection" style="display: none;">
+            <div id="downloadButtons"></div>
+            <div id="conversionStatus" style="margin-top: 10px; font-weight: bold;"></div>
+            <canvas id="conversionCanvas" style="display: none;"></canvas>
+        </div>
+        
+        <div class="error" id="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream;
+        let timerInterval;
+        let currentPhase = 'waiting'; // waiting, preparing, timing, extending, finished
+        let totalSeconds = 0;
+        let remainingSeconds = 0;
+        let isRecording = false;
+        let showTimerInVideo = true;
+        let recordingCanvas, recordingContext;
+        let animationId;
+
+        // 初始化攝像頭
+        async function initCamera() {
+            try {
+                // 檢查瀏覽器支援
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('瀏覽器不支援攝像頭功能');
+                }
+
+                updateStatus('正在請求攝像頭權限...', 'preparing');
+                
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    },
+                    audio: true
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                // 確保視頻開始播放
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        console.log('視頻開始播放');
+                        document.getElementById('error').style.display = 'none';
+                        updateStatus('攝像頭已準備就緒', 'waiting');
+                        
+                        // 啟用開始按鈕
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('startBtn').textContent = '開始計時錄影';
+                    }).catch(err => {
+                        console.error('視頻播放失敗:', err);
+                        showError('視頻播放失敗，請重新整理頁面');
+                    });
+                };
+                
+            } catch (err) {
+                console.error('無法訪問攝像頭:', err);
+                let errorMessage = '';
+                
+                switch(err.name) {
+                    case 'NotAllowedError':
+                        errorMessage = '攝像頭權限被拒絕。請點擊瀏覽器網址列旁的攝像頭圖示，選擇「允許」，然後重新整理頁面。';
+                        break;
+                    case 'NotFoundError':
+                        errorMessage = '找不到攝像頭設備，請確保攝像頭已連接。';
+                        break;
+                    case 'NotReadableError':
+                        errorMessage = '攝像頭被其他應用程式佔用，請關閉其他使用攝像頭的程式。';
+                        break;
+                    case 'OverconstrainedError':
+                        errorMessage = '攝像頭設定不符合要求，正在嘗試降低品質...';
+                        // 嘗試較低的解析度
+                        setTimeout(() => initCameraLowRes(), 1000);
+                        return;
+                    default:
+                        errorMessage = `攝像頭初始化失敗: ${err.message}`;
+                }
+                
+                showError(errorMessage);
+                updateStatus('攝像頭未就緒', 'waiting');
+                document.getElementById('startBtn').disabled = true;
+            }
+        }
+
+        // 嘗試較低解析度
+        async function initCameraLowRes() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: true
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    video.play().then(() => {
+                        console.log('視頻開始播放 (低解析度)');
+                        document.getElementById('error').style.display = 'none';
+                        updateStatus('攝像頭已準備就緒 (降低品質)', 'waiting');
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('startBtn').textContent = '開始計時錄影';
+                    }).catch(err => {
+                        console.error('視頻播放失敗:', err);
+                        showError('視頻播放失敗');
+                    });
+                };
+                
+            } catch (err) {
+                showError('無法啟動攝像頭，請檢查設備和權限設定');
+                updateStatus('攝像頭未就緒', 'waiting');
+            }
+        }
+
+        function showError(message) {
+            console.error('錯誤:', message);
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function updateStatus(message, className) {
+            console.log('狀態更新:', message, className);
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${className}`;
+        }
+
+        function updateTimerDisplay(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            
+            document.getElementById('timerDisplay').textContent = timeString;
+            
+            // 不再使用預覽時的視頻覆蓋層
+        }
+
+        function startTimer() {
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('seconds').value) || 0;
+            showTimerInVideo = document.getElementById('showTimer').checked;
+            
+            totalSeconds = minutes * 60 + seconds;
+            
+            if (totalSeconds <= 0 || totalSeconds > 600) {
+                showError('請設定1秒到10分鐘之間的時間');
+                return;
+            }
+
+            if (!stream) {
+                showError('攝像頭未準備好，請重新整理頁面或檢查攝像頭權限');
+                return;
+            }
+
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            document.getElementById('downloadSection').style.display = 'none';
+            document.getElementById('startBtn').textContent = '開始計時錄影';
+
+            // 初始化錄影畫布
+            if (showTimerInVideo) {
+                setupRecordingCanvas();
+            }
+
+            // 開始預備倒數（10秒）
+            currentPhase = 'preparing';
+            remainingSeconds = 10;
+            updateStatus('預備倒數', 'preparing');
+            updateTimerDisplay(remainingSeconds);
+
+            timerInterval = setInterval(() => {
+                remainingSeconds--;
+                updateTimerDisplay(remainingSeconds);
+
+                if (currentPhase === 'preparing') {
+                    if (remainingSeconds === 5) {
+                        // 開始錄影（預備倒數5秒時）
+                        startRecording();
+                    }
+                    
+                    if (remainingSeconds <= 0) {
+                        // 進入正式計時
+                        currentPhase = 'timing';
+                        remainingSeconds = totalSeconds;
+                        updateStatus('正在計時錄影', 'recording');
+                    }
+                } else if (currentPhase === 'timing') {
+                    if (remainingSeconds <= 0) {
+                        // 進入延遲階段（繼續錄影10秒）
+                        currentPhase = 'extending';
+                        remainingSeconds = 10;
+                        updateStatus('延長錄影中', 'recording');
+                        updateTimerDisplay(0); // 顯示00:00
+                    }
+                } else if (currentPhase === 'extending') {
+                    if (remainingSeconds <= 0) {
+                        // 結束錄影
+                        finishRecording();
+                    }
+                }
+            }, 1000);
+        }
+
+        function setupRecordingCanvas() {
+            recordingCanvas = document.getElementById('recordingCanvas');
+            recordingContext = recordingCanvas.getContext('2d');
+            
+            const video = document.getElementById('video');
+            
+            // 等待視頻元數據載入
+            if (video.videoWidth && video.videoHeight) {
+                recordingCanvas.width = video.videoWidth;
+                recordingCanvas.height = video.videoHeight;
+            } else {
+                // 使用預設解析度
+                recordingCanvas.width = 640;
+                recordingCanvas.height = 480;
+            }
+            
+            console.log('Canvas尺寸:', recordingCanvas.width, 'x', recordingCanvas.height);
+            
+            recordingCanvas.style.display = 'block';
+            video.style.display = 'none';
+        }
+
+        function drawVideoWithTimer() {
+            if (!isRecording || !showTimerInVideo || !recordingContext) return;
+            
+            const video = document.getElementById('video');
+            const canvas = recordingCanvas;
+            const ctx = recordingContext;
+            
+            // 確保視頻正在播放
+            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+                // 清除畫布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 繪製視頻畫面
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // 計算當前顯示的時間
+                let displaySeconds;
+                if (currentPhase === 'preparing') {
+                    displaySeconds = remainingSeconds; // 預備倒數
+                } else if (currentPhase === 'timing') {
+                    displaySeconds = remainingSeconds; // 正式計時
+                } else if (currentPhase === 'extending') {
+                    displaySeconds = 0; // 延長階段顯示00:00
+                } else {
+                    displaySeconds = 0;
+                }
+                
+                const minutes = Math.floor(displaySeconds / 60);
+                const secs = displaySeconds % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                
+                // 設定文字樣式
+                const fontSize = Math.max(24, canvas.width / 20); // 響應式字體大小
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'top';
+                
+                // 計算文字位置（右上角）
+                const padding = 20;
+                const x = canvas.width - padding;
+                const y = padding;
+                
+                // 測量文字尺寸
+                const textMetrics = ctx.measureText(timeString);
+                const textWidth = textMetrics.width;
+                const textHeight = fontSize;
+                
+                // 繪製半透明背景
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(x - textWidth - 10, y - 5, textWidth + 20, textHeight + 10);
+                
+                // 繪製白色邊框
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x - textWidth - 10, y - 5, textWidth + 20, textHeight + 10);
+                
+                // 繪製文字
+                ctx.fillStyle = 'white';
+                ctx.fillText(timeString, x, y);
+                
+                console.log('繪製計時器:', timeString, '位置:', x, y);
+            }
+            
+            // 繼續動畫
+            if (isRecording && showTimerInVideo) {
+                animationId = requestAnimationFrame(drawVideoWithTimer);
+            }
+        }
+
+        function startRecording() {
+            try {
+                recordedChunks = [];
+                
+                let recordingStream;
+                
+                if (showTimerInVideo) {
+                    console.log('啟動帶計時器的錄影模式');
+                    
+                    // 確保Canvas準備就緒
+                    setTimeout(() => {
+                        drawVideoWithTimer();
+                    }, 100);
+                    
+                    // 使用較高的幀率來確保流暢度
+                    recordingStream = recordingCanvas.captureStream(60);
+                    
+                    // 添加音頻軌道
+                    const audioTracks = stream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        recordingStream.addTrack(audioTracks[0]);
+                        console.log('已添加音頻軌道');
+                    }
+                    
+                    console.log('錄影流軌道數量:', recordingStream.getTracks().length);
+                } else {
+                    console.log('啟動普通錄影模式');
+                    recordingStream = stream;
+                }
+                
+                // 嘗試不同的編碼格式，優先選擇品質較好的
+                let options = { videoBitsPerSecond: 2500000 }; // 2.5 Mbps
+                
+                if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+                    options.mimeType = 'video/webm;codecs=vp9,opus';
+                    console.log('使用 VP9 編碼');
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+                    options.mimeType = 'video/webm;codecs=vp8,opus';
+                    console.log('使用 VP8 編碼');
+                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    options.mimeType = 'video/mp4';
+                    console.log('使用 MP4 編碼');
+                } else {
+                    console.log('使用預設編碼');
+                }
+                
+                mediaRecorder = new MediaRecorder(recordingStream, options);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                        console.log('錄製數據塊大小:', event.data.size);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log('錄影停止，總數據塊:', recordedChunks.length);
+                    
+                    const mimeType = mediaRecorder.mimeType || 'video/webm';
+                    const blob = new Blob(recordedChunks, { type: mimeType });
+                    
+                    console.log('最終影片大小:', blob.size, 'bytes');
+                    
+                    window.recordedBlob = blob;
+                    window.recordedMimeType = mimeType;
+                    
+                    // 創建預覽
+                    const url = URL.createObjectURL(blob);
+                    window.recordedVideoUrl = url;
+                    
+                    document.getElementById('downloadSection').style.display = 'block';
+                    
+                    // 如果支援 MP4，直接提供 MP4 下載
+                    if (mimeType.includes('mp4')) {
+                        updateDownloadButtons('mp4');
+                    } else {
+                        // 否則提供轉換選項
+                        updateDownloadButtons('webm');
+                    }
+                };
+
+                // 定期錄製數據以確保不丟失
+                mediaRecorder.start(1000); // 每秒錄製一次
+                isRecording = true;
+                document.getElementById('recordingIndicator').style.display = 'inline-block';
+                
+                console.log('MediaRecorder 已啟動');
+                
+            } catch (err) {
+                console.error('錄影啟動失敗:', err);
+                showError('錄影啟動失敗: ' + err.message);
+            }
+        }
+
+        function stopRecording() {
+            clearInterval(timerInterval);
+            
+            if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            finishRecording();
+        }
+
+        function stopRecording() {
+            console.log('手動停止錄影');
+            clearInterval(timerInterval);
+            
+            if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            finishRecording();
+        }
+
+        function finishRecording() {
+            console.log('完成錄影流程');
+            clearInterval(timerInterval);
+            
+            if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            
+            isRecording = false;
+            currentPhase = 'finished';
+            
+            // 停止動畫
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                console.log('已停止動畫幀');
+            }
+            
+            // 恢復視頻顯示
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('recordingCanvas');
+            
+            setTimeout(() => {
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+                console.log('已恢復視頻顯示');
+            }, 500); // 延遲恢復，確保錄影完全停止
+            
+            document.getElementById('recordingIndicator').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            
+            updateStatus('錄影完成！', 'finished');
+        }
+
+        function updateDownloadButtons(format) {
+            const downloadButtons = document.getElementById('downloadButtons');
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+            
+            if (format === 'mp4') {
+                downloadButtons.innerHTML = `
+                    <button class="download-btn" onclick="downloadVideo('mp4')">下載 MP4</button>
+                `;
+            } else {
+                downloadButtons.innerHTML = `
+                    <button class="download-btn" onclick="downloadVideo('webm')">下載 WebM (原始)</button>
+                    <button class="download-btn" onclick="convertToMp4()" style="margin-left: 10px;">轉換並下載 MP4</button>
+                `;
+            }
+        }
+
+        function downloadVideo(format) {
+            const timestamp = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+            
+            if (window.recordedVideoUrl) {
+                const a = document.createElement('a');
+                a.href = window.recordedVideoUrl;
+                
+                if (format === 'mp4') {
+                    a.download = `recording_${timestamp}.mp4`;
+                } else {
+                    a.download = `recording_${timestamp}.webm`;
+                }
+                
+                a.click();
+            }
+        }
+
+        // 使用 Canvas 進行格式轉換
+        async function convertToMp4() {
+            if (!window.recordedBlob) {
+                showError('沒有可轉換的錄影');
+                return;
+            }
+
+            const conversionStatus = document.getElementById('conversionStatus');
+            conversionStatus.textContent = '正在轉換為 MP4...';
+            conversionStatus.style.color = '#f57c00';
+
+            try {
+                // 創建視頻元素來播放錄製的內容
+                const videoElement = document.createElement('video');
+                videoElement.src = window.recordedVideoUrl;
+                videoElement.muted = true;
+                videoElement.preload = 'metadata';
+
+                await new Promise((resolve) => {
+                    videoElement.onloadedmetadata = resolve;
+                });
+
+                const canvas = document.getElementById('conversionCanvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = videoElement.videoWidth;
+                canvas.height = videoElement.videoHeight;
+
+                // 使用 MediaRecorder 重新錄製為 MP4（如果支援）
+                const canvasStream = canvas.captureStream();
+                
+                let mp4Options = {};
+                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+                    mp4Options = { mimeType: 'video/mp4;codecs=avc1' };
+                } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                    mp4Options = { mimeType: 'video/mp4' };
+                } else {
+                    // 如果不支援 MP4，使用較相容的格式
+                    conversionStatus.textContent = '瀏覽器不支援 MP4 轉換，將下載 WebM 格式';
+                    conversionStatus.style.color = '#f44336';
+                    setTimeout(() => downloadVideo('webm'), 2000);
+                    return;
+                }
+
+                const mp4Recorder = new MediaRecorder(canvasStream, mp4Options);
+                const mp4Chunks = [];
+
+                mp4Recorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        mp4Chunks.push(event.data);
+                    }
+                };
+
+                mp4Recorder.onstop = () => {
+                    const mp4Blob = new Blob(mp4Chunks, { type: 'video/mp4' });
+                    const mp4Url = URL.createObjectURL(mp4Blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = mp4Url;
+                    a.download = `recording_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.mp4`;
+                    a.click();
+                    
+                    conversionStatus.textContent = 'MP4 轉換完成！';
+                    conversionStatus.style.color = '#4caf50';
+                    
+                    // 清理
+                    URL.revokeObjectURL(mp4Url);
+                };
+
+                mp4Recorder.start();
+
+                // 播放原視頻並繪製到 Canvas
+                videoElement.currentTime = 0;
+                videoElement.play();
+
+                const drawFrame = () => {
+                    if (videoElement.ended) {
+                        mp4Recorder.stop();
+                        return;
+                    }
+                    
+                    ctx.drawImage(videoElement, 0, 0);
+                    requestAnimationFrame(drawFrame);
+                };
+
+                videoElement.onplay = () => {
+                    drawFrame();
+                };
+
+            } catch (err) {
+                console.error('轉換失敗:', err);
+                conversionStatus.textContent = '轉換失敗，將下載原始 WebM 格式';
+                conversionStatus.style.color = '#f44336';
+                setTimeout(() => downloadVideo('webm'), 2000);
+            }
+        }
+
+        // 頁面載入時初始化攝像頭
+        window.onload = () => {
+            console.log('頁面載入，開始初始化攝像頭');
+            initCamera();
+        };
+
+        // 頁面關閉時清理資源
+        window.onbeforeunload = () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        };
+    </script>
+</body>
+</html>

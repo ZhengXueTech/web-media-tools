@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>專業影片裁切工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .main-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .upload-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .video-section {
+            display: none;
+            margin-bottom: 30px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-height: 60vh;
+        }
+
+        .video-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 60vh;
+        }
+
+        .crop-overlay {
+            position: absolute;
+            border: 3px solid #667eea;
+            background: rgba(102,126,234,0.15);
+            cursor: move;
+            display: none;
+            box-shadow: 0 0 0 2000px rgba(0,0,0,0.3);
+        }
+
+        .crop-handle {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #667eea;
+            border: 3px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .crop-handle.nw { top: -8px; left: -8px; cursor: nw-resize; }
+        .crop-handle.ne { top: -8px; right: -8px; cursor: ne-resize; }
+        .crop-handle.sw { bottom: -8px; left: -8px; cursor: sw-resize; }
+        .crop-handle.se { bottom: -8px; right: -8px; cursor: se-resize; }
+        .crop-handle.n { top: -8px; left: 50%; transform: translateX(-50%); cursor: n-resize; }
+        .crop-handle.s { bottom: -8px; left: 50%; transform: translateX(-50%); cursor: s-resize; }
+        .crop-handle.w { top: 50%; left: -8px; transform: translateY(-50%); cursor: w-resize; }
+        .crop-handle.e { top: 50%; right: -8px; transform: translateY(-50%); cursor: e-resize; }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            box-shadow: 0 4px 15px rgba(240,147,251,0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(240,147,251,0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 4px 15px rgba(79,172,254,0.3);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79,172,254,0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .download-options {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .format-selector {
+            padding: 12px 16px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            background: white;
+            color: #333;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .format-selector:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.2);
+        }
+
+        .crop-info {
+            display: none;
+            background: rgba(102,126,234,0.1);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .crop-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .crop-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .crop-detail-item {
+            background: rgba(255,255,255,0.8);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(102,126,234,0.2);
+        }
+
+        .crop-detail-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .crop-detail-value {
+            font-weight: 500;
+            color: #667eea;
+        }
+
+        .crop-presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .preset-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .preset-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(102,126,234,0.2);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-success {
+            background: rgba(79,172,254,0.1);
+            color: #0ea5e9;
+            border: 1px solid rgba(79,172,254,0.2);
+        }
+
+        .status-error {
+            background: rgba(245,87,108,0.1);
+            color: #f5576c;
+            border: 1px solid rgba(245,87,108,0.2);
+        }
+
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .preview-wrapper {
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .preview-header {
+            background: rgba(102,126,234,0.1);
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(102,126,234,0.2);
+        }
+
+        .preview-header h3 {
+            color: #333;
+            margin: 0;
+        }
+
+        #previewCanvas {
+            width: 100%;
+            height: auto;
+            display: block;
+            background: #000;
+        }
+
+        .ffmpeg-status {
+            display: none;
+            background: rgba(102,126,234,0.1);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .ffmpeg-ready {
+            color: #4facfe;
+            font-weight: 500;
+        }
+
+        .ffmpeg-error {
+            color: #f5576c;
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-panel {
+                padding: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
+            }
+            
+            .crop-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .main-panel {
+            animation: fadeInUp 0.8s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 專業影片裁切工具</h1>
+            <p>具備真實裁切功能的影片編輯器，支援 MP4/WebM 格式輸出</p>
+        </div>
+
+        <div class="main-panel">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <span class="upload-icon">📹</span>
+                <div class="upload-text">點擊或拖拽上傳影片</div>
+                <div class="upload-hint">支援 MP4, AVI, MOV, WebM 格式，最大 100MB</div>
+                <input type="file" id="fileInput" accept="video/mp4,video/avi,video/mov,video/webm">
+            </div>
+
+            <div class="video-section" id="videoSection">
+                <div class="video-wrapper">
+                    <div class="video-container">
+                        <video id="videoPlayer" muted>
+                            <source id="videoSource" src="" type="video/mp4">
+                            您的瀏覽器不支援影片播放
+                        </video>
+                        <div class="crop-overlay" id="cropOverlay">
+                            <div class="crop-handle nw"></div>
+                            <div class="crop-handle ne"></div>
+                            <div class="crop-handle sw"></div>
+                            <div class="crop-handle se"></div>
+                            <div class="crop-handle n"></div>
+                            <div class="crop-handle s"></div>
+                            <div class="crop-handle w"></div>
+                            <div class="crop-handle e"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="crop-info" id="cropInfo">
+                    <h3>📏 裁切設定</h3>
+                    <div class="crop-presets">
+                        <button class="preset-btn" data-ratio="16:9">16:9</button>
+                        <button class="preset-btn" data-ratio="4:3">4:3</button>
+                        <button class="preset-btn" data-ratio="1:1">1:1</button>
+                        <button class="preset-btn" data-ratio="9:16">9:16 (直式)</button>
+                        <button class="preset-btn" data-ratio="free">自由</button>
+                    </div>
+                    <div class="crop-details">
+                        <div class="crop-detail-item">
+                            <div class="crop-detail-label">起始位置 X:</div>
+                            <div class="crop-detail-value"><span id="cropX">0</span>px</div>
+                        </div>
+                        <div class="crop-detail-item">
+                            <div class="crop-detail-label">起始位置 Y:</div>
+                            <div class="crop-detail-value"><span id="cropY">0</span>px</div>
+                        </div>
+                        <div class="crop-detail-item">
+                            <div class="crop-detail-label">寬度:</div>
+                            <div class="crop-detail-value"><span id="cropWidth">0</span>px</div>
+                        </div>
+                        <div class="crop-detail-item">
+                            <div class="crop-detail-label">高度:</div>
+                            <div class="crop-detail-value"><span id="cropHeight">0</span>px</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="enableCropBtn">
+                        ✂️ 開始裁切
+                    </button>
+                    <button class="btn btn-secondary" id="previewBtn" disabled>
+                        👁️ 即時預覽
+                    </button>
+                    <div class="download-options">
+                        <select id="formatSelect" class="format-selector">
+                            <option value="mp4">MP4 (推薦)</option>
+                            <option value="webm">WebM</option>
+                            <option value="auto">自動選擇</option>
+                        </select>
+                        <button class="btn btn-success" id="downloadBtn" disabled>
+                            💾 下載影片
+                        </button>
+                    </div>
+                    <button class="btn btn-primary" id="resetBtn">
+                        🔄 重設
+                    </button>
+                </div>
+
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">處理中...</div>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+
+                <div class="ffmpeg-status" id="ffmpegStatus">
+                    <div class="ffmpeg-loading">🔍 正在檢測影片格式支援...</div>
+                </div>
+
+                <div class="preview-section" id="previewSection">
+                    <div class="preview-wrapper">
+                        <div class="preview-header">
+                            <h3>🎯 裁切預覽</h3>
+                        </div>
+                        <canvas id="previewCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class VideoCropTool {
+            constructor() {
+                this.videoFile = null;
+                this.cropEnabled = false;
+                this.cropData = { x: 0, y: 0, width: 0, height: 0 };
+                this.isDragging = false;
+                this.dragStart = { x: 0, y: 0 };
+                this.currentHandle = null;
+                this.aspectRatio = null;
+                
+                this.initElements();
+                this.bindEvents();
+                this.checkVideoSupport();
+            }
+            
+            initElements() {
+                this.fileInput = document.getElementById('fileInput');
+                this.uploadArea = document.querySelector('.upload-area');
+                this.videoSection = document.getElementById('videoSection');
+                this.videoPlayer = document.getElementById('videoPlayer');
+                this.videoSource = document.getElementById('videoSource');
+                this.cropOverlay = document.getElementById('cropOverlay');
+                this.enableCropBtn = document.getElementById('enableCropBtn');
+                this.previewBtn = document.getElementById('previewBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.cropInfo = document.getElementById('cropInfo');
+                this.progressContainer = document.getElementById('progressContainer');
+                this.statusMessage = document.getElementById('statusMessage');
+                this.previewSection = document.getElementById('previewSection');
+                this.previewCanvas = document.getElementById('previewCanvas');
+                this.formatSelect = document.getElementById('formatSelect');
+                this.ffmpegStatus = document.getElementById('ffmpegStatus');
+                this.ctx = this.previewCanvas.getContext('2d');
+            }
+            
+            checkVideoSupport() {
+                const supportedFormats = this.getSupportedVideoFormats();
+                let statusMessage = '';
+                
+                if (supportedFormats.mp4) {
+                    statusMessage = '✅ 支援 MP4 格式輸出！';
+                    this.ffmpegStatus.innerHTML = `<div class="ffmpeg-ready">${statusMessage}</div>`;
+                } else if (supportedFormats.webm) {
+                    statusMessage = '✅ 支援 WebM 格式輸出！';
+                    this.ffmpegStatus.innerHTML = `<div class="ffmpeg-ready">${statusMessage}</div>`;
+                    this.formatSelect.innerHTML = `
+                        <option value="webm">WebM (推薦)</option>
+                        <option value="auto">自動選擇</option>
+                    `;
+                } else {
+                    statusMessage = '⚠️ 瀏覽器支援有限，建議使用 Chrome 或 Firefox';
+                    this.ffmpegStatus.innerHTML = `<div class="ffmpeg-error">${statusMessage}</div>`;
+                }
+                
+                this.ffmpegStatus.style.display = 'block';
+                setTimeout(() => {
+                    this.ffmpegStatus.style.display = 'none';
+                }, 4000);
+            }
+            
+            bindEvents() {
+                // 檔案上傳
+                this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+                this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+                this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+                this.uploadArea.addEventListener('dragenter', () => this.uploadArea.classList.add('dragover'));
+                this.uploadArea.addEventListener('dragleave', () => this.uploadArea.classList.remove('dragover'));
+                
+                // 控制按鈕
+                this.enableCropBtn.addEventListener('click', () => this.toggleCrop());
+                this.previewBtn.addEventListener('click', () => this.generatePreview());
+                this.downloadBtn.addEventListener('click', () => this.downloadCroppedVideo());
+                this.resetBtn.addEventListener('click', () => this.reset());
+                
+                // 裁切區域拖拽
+                this.cropOverlay.addEventListener('mousedown', (e) => this.startDrag(e));
+                document.addEventListener('mousemove', (e) => this.drag(e));
+                document.addEventListener('mouseup', () => this.stopDrag());
+                
+                // 預設比例按鈕
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.applyPreset(e.target.dataset.ratio));
+                });
+                
+                // 鍵盤快捷鍵
+                document.addEventListener('keydown', (e) => this.handleKeydown(e));
+            }
+            
+            handleDragOver(e) {
+                e.preventDefault();
+            }
+            
+            handleDrop(e) {
+                e.preventDefault();
+                this.uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].type.startsWith('video/')) {
+                    this.handleFile(files[0]);
+                }
+            }
+            
+            handleFileSelect(e) {
+                if (e.target.files.length > 0) {
+                    this.handleFile(e.target.files[0]);
+                }
+            }
+            
+            handleFile(file) {
+                if (file.size > 100 * 1024 * 1024) {
+                    this.showStatus('檔案大小超過 100MB 限制', 'error');
+                    return;
+                }
+                
+                this.videoFile = file;
+                const url = URL.createObjectURL(file);
+                this.videoSource.src = url;
+                this.videoPlayer.load();
+                
+                this.videoSection.style.display = 'block';
+                this.showStatus('影片載入成功！', 'success');
+                
+                this.videoPlayer.addEventListener('loadedmetadata', () => {
+                    this.initializeCropArea();
+                });
+            }
+            
+            initializeCropArea() {
+                const videoRect = this.videoPlayer.getBoundingClientRect();
+                
+                this.cropData = {
+                    x: videoRect.width * 0.1,
+                    y: videoRect.height * 0.1,
+                    width: videoRect.width * 0.8,
+                    height: videoRect.height * 0.8
+                };
+                
+                this.updateCropOverlay();
+            }
+            
+            toggleCrop() {
+                this.cropEnabled = !this.cropEnabled;
+                
+                if (this.cropEnabled) {
+                    this.cropOverlay.style.display = 'block';
+                    this.cropInfo.style.display = 'block';
+                    this.enableCropBtn.innerHTML = '❌ 停止裁切';
+                    this.enableCropBtn.className = 'btn btn-secondary';
+                    this.previewBtn.disabled = false;
+                    this.downloadBtn.disabled = false;
+                } else {
+                    this.cropOverlay.style.display = 'none';
+                    this.cropInfo.style.display = 'none';
+                    this.enableCropBtn.innerHTML = '✂️ 開始裁切';
+                    this.enableCropBtn.className = 'btn btn-primary';
+                    this.previewBtn.disabled = true;
+                    this.downloadBtn.disabled = true;
+                    this.previewSection.style.display = 'none';
+                }
+            }
+            
+            startDrag(e) {
+                e.preventDefault();
+                this.isDragging = true;
+                this.dragStart = { x: e.clientX, y: e.clientY };
+                
+                if (e.target.classList.contains('crop-handle')) {
+                    this.currentHandle = e.target;
+                } else {
+                    this.currentHandle = null;
+                }
+            }
+            
+            drag(e) {
+                if (!this.isDragging || !this.cropEnabled) return;
+                
+                const deltaX = e.clientX - this.dragStart.x;
+                const deltaY = e.clientY - this.dragStart.y;
+                
+                if (this.currentHandle) {
+                    this.resizeCropArea(this.currentHandle, deltaX, deltaY);
+                } else {
+                    this.moveCropArea(deltaX, deltaY);
+                }
+                
+                this.dragStart = { x: e.clientX, y: e.clientY };
+                this.updateCropOverlay();
+            }
+            
+            stopDrag() {
+                this.isDragging = false;
+                this.currentHandle = null;
+            }
+            
+            moveCropArea(deltaX, deltaY) {
+                const videoRect = this.videoPlayer.getBoundingClientRect();
+                
+                this.cropData.x = Math.max(0, 
+                    Math.min(videoRect.width - this.cropData.width, 
+                        this.cropData.x + deltaX));
+                this.cropData.y = Math.max(0, 
+                    Math.min(videoRect.height - this.cropData.height, 
+                        this.cropData.y + deltaY));
+            }
+            
+            resizeCropArea(handle, deltaX, deltaY) {
+                const videoRect = this.videoPlayer.getBoundingClientRect();
+                const className = handle.className;
+                const minSize = 50;
+                
+                let newCropData = { ...this.cropData };
+                
+                if (className.includes('se')) {
+                    newCropData.width = Math.max(minSize, 
+                        Math.min(videoRect.width - this.cropData.x, this.cropData.width + deltaX));
+                    newCropData.height = Math.max(minSize, 
+                        Math.min(videoRect.height - this.cropData.y, this.cropData.height + deltaY));
+                } else if (className.includes('nw')) {
+                    const newWidth = this.cropData.width - deltaX;
+                    const newHeight = this.cropData.height - deltaY;
+                    
+                    if (newWidth >= minSize && this.cropData.x + deltaX >= 0) {
+                        newCropData.x = this.cropData.x + deltaX;
+                        newCropData.width = newWidth;
+                    }
+                    if (newHeight >= minSize && this.cropData.y + deltaY >= 0) {
+                        newCropData.y = this.cropData.y + deltaY;
+                        newCropData.height = newHeight;
+                    }
+                }
+                
+                this.cropData = newCropData;
+            }
+            
+            applyPreset(ratio) {
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                
+                const videoRect = this.videoPlayer.getBoundingClientRect();
+                let aspectRatio;
+                
+                switch(ratio) {
+                    case '16:9':
+                        aspectRatio = 16/9;
+                        break;
+                    case '4:3':
+                        aspectRatio = 4/3;
+                        break;
+                    case '1:1':
+                        aspectRatio = 1;
+                        break;
+                    case '9:16':
+                        aspectRatio = 9/16;
+                        break;
+                    case 'free':
+                        aspectRatio = null;
+                        break;
+                }
+                
+                this.aspectRatio = aspectRatio;
+                
+                if (aspectRatio) {
+                    let width = videoRect.width * 0.8;
+                    let height = width / aspectRatio;
+                    
+                    if (height > videoRect.height * 0.8) {
+                        height = videoRect.height * 0.8;
+                        width = height * aspectRatio;
+                    }
+                    
+                    this.cropData = {
+                        x: (videoRect.width - width) / 2,
+                        y: (videoRect.height - height) / 2,
+                        width: width,
+                        height: height
+                    };
+                    
+                    this.updateCropOverlay();
+                }
+            }
+            
+            updateCropOverlay() {
+                this.cropOverlay.style.left = this.cropData.x + 'px';
+                this.cropOverlay.style.top = this.cropData.y + 'px';
+                this.cropOverlay.style.width = this.cropData.width + 'px';
+                this.cropOverlay.style.height = this.cropData.height + 'px';
+                
+                this.updateCropInfo();
+            }
+            
+            updateCropInfo() {
+                document.getElementById('cropX').textContent = Math.round(this.cropData.x);
+                document.getElementById('cropY').textContent = Math.round(this.cropData.y);
+                document.getElementById('cropWidth').textContent = Math.round(this.cropData.width);
+                document.getElementById('cropHeight').textContent = Math.round(this.cropData.height);
+            }
+            
+            generatePreview() {
+                if (!this.cropEnabled || !this.videoFile) return;
+                
+                this.showStatus('正在生成預覽...', 'success');
+                this.previewSection.style.display = 'block';
+                
+                const videoRect = this.videoPlayer.getBoundingClientRect();
+                const scaleX = this.videoPlayer.videoWidth / videoRect.width;
+                const scaleY = this.videoPlayer.videoHeight / videoRect.height;
+                
+                const actualCrop = {
+                    x: this.cropData.x * scaleX,
+                    y: this.cropData.y * scaleY,
+                    width: this.cropData.width * scaleX,
+                    height: this.cropData.height * scaleY
+                };
+                
+                this.previewCanvas.width = actualCrop.width;
+                this.previewCanvas.height = actualCrop.height;
+                
+                this.ctx.drawImage(
+                    this.videoPlayer,
+                    actualCrop.x, actualCrop.y, actualCrop.width, actualCrop.height,
+                    0, 0, actualCrop.width, actualCrop.height
+                );
+                
+                const updatePreview = () => {
+                    if (this.previewSection.style.display === 'block' && !this.videoPlayer.paused) {
+                        this.ctx.drawImage(
+                            this.videoPlayer,
+                            actualCrop.x, actualCrop.y, actualCrop.width, actualCrop.height,
+                            0, 0, actualCrop.width, actualCrop.height
+                        );
+                        requestAnimationFrame(updatePreview);
+                    }
+                };
+                
+                if (!this.videoPlayer.paused) {
+                    updatePreview();
+                }
+                
+                this.showStatus('預覽生成完成！', 'success');
+            }
+            
+            async downloadCroppedVideo() {
+                if (!this.cropEnabled || !this.videoFile) return;
+                
+                const selectedFormat = this.formatSelect.value;
+                await this.downloadWithMediaRecorder(selectedFormat);
+            }
+            
+            async downloadWithMediaRecorder(format) {
+                this.showProgress(0, '正在初始化影片處理...');
+                
+                try {
+                    const videoRect = this.videoPlayer.getBoundingClientRect();
+                    const scaleX = this.videoPlayer.videoWidth / videoRect.width;
+                    const scaleY = this.videoPlayer.videoHeight / videoRect.height;
+                    
+                    const actualCrop = {
+                        x: Math.round(this.cropData.x * scaleX),
+                        y: Math.round(this.cropData.y * scaleY),
+                        width: Math.round(this.cropData.width * scaleX),
+                        height: Math.round(this.cropData.height * scaleY)
+                    };
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = actualCrop.width;
+                    canvas.height = actualCrop.height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    const video = document.createElement('video');
+                    video.src = URL.createObjectURL(this.videoFile);
+                    video.muted = true;
+                    
+                    await new Promise(resolve => {
+                        video.addEventListener('loadedmetadata', resolve);
+                        video.load();
+                    });
+                    
+                    const duration = video.duration;
+                    const fps = 30;
+                    const totalFrames = Math.floor(duration * fps);
+                    const frameInterval = 1 / fps;
+                    
+                    const supportedFormats = this.getSupportedVideoFormats();
+                    let selectedFormat, fileExtension, mimeType;
+                    
+                    if (format === 'mp4' && supportedFormats.mp4) {
+                        selectedFormat = supportedFormats.mp4;
+                        fileExtension = 'mp4';
+                        mimeType = 'video/mp4';
+                    } else if (format === 'webm' || !supportedFormats.mp4) {
+                        selectedFormat = supportedFormats.webm;
+                        fileExtension = 'webm';
+                        mimeType = 'video/webm';
+                    } else {
+                        selectedFormat = supportedFormats.mp4 || supportedFormats.webm;
+                        fileExtension = supportedFormats.mp4 ? 'mp4' : 'webm';
+                        mimeType = supportedFormats.mp4 ? 'video/mp4' : 'video/webm';
+                    }
+                    
+                    console.log(`使用格式: ${selectedFormat}`);
+                    
+                    const stream = canvas.captureStream(fps);
+                    const mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: selectedFormat,
+                        videoBitsPerSecond: 4000000
+                    });
+                    
+                    const chunks = [];
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) {
+                            chunks.push(e.data);
+                        }
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        this.showProgress(95, '正在生成最終檔案...');
+                        
+                        const blob = new Blob(chunks, { type: mimeType });
+                        this.downloadBlob(blob, `cropped_video.${fileExtension}`);
+                        
+                        this.hideProgress();
+                        this.showStatus(`影片下載完成！格式：${fileExtension.toUpperCase()}`, 'success');
+                    };
+                    
+                    mediaRecorder.start();
+                    this.showProgress(5, '開始錄製影片...');
+                    
+                    let currentFrame = 0;
+                    
+                    const processFrame = async () => {
+                        if (currentFrame >= totalFrames) {
+                            mediaRecorder.stop();
+                            return;
+                        }
+                        
+                        const currentTime = currentFrame * frameInterval;
+                        video.currentTime = Math.min(currentTime, duration - 0.1);
+                        
+                        await new Promise((resolve) => {
+                            const onSeeked = () => {
+                                video.removeEventListener('seeked', onSeeked);
+                                resolve();
+                            };
+                            video.addEventListener('seeked', onSeeked);
+                            setTimeout(resolve, 100);
+                        });
+                        
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(
+                            video,
+                            actualCrop.x, actualCrop.y, actualCrop.width, actualCrop.height,
+                            0, 0, actualCrop.width, actualCrop.height
+                        );
+                        
+                        const progress = 5 + (currentFrame / totalFrames) * 85;
+                        this.showProgress(progress, `正在處理第 ${currentFrame + 1}/${totalFrames} 幀...`);
+                        
+                        currentFrame++;
+                        
+                        if (currentFrame < totalFrames) {
+                            requestAnimationFrame(processFrame);
+                        } else {
+                            setTimeout(() => processFrame(), 100);
+                        }
+                    };
+                    
+                    setTimeout(processFrame, 500);
+                    
+                } catch (error) {
+                    console.error('影片處理錯誤:', error);
+                    this.hideProgress();
+                    this.showStatus('影片處理失敗，請重試', 'error');
+                }
+            }
+            
+            getSupportedVideoFormats() {
+                const formats = {};
+                
+                const mp4Types = [
+                    'video/mp4',
+                    'video/mp4;codecs=avc1.42E01E',
+                    'video/mp4;codecs=avc1.42001E',
+                    'video/mp4;codecs=avc1.58A01E',
+                    'video/mp4;codecs="avc1.42E01E"',
+                    'video/mp4;codecs=h264',
+                    'video/mpeg'
+                ];
+                
+                for (const type of mp4Types) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        formats.mp4 = type;
+                        console.log(`MP4 支援格式: ${type}`);
+                        break;
+                    }
+                }
+                
+                const webmTypes = [
+                    'video/webm;codecs=vp9',
+                    'video/webm;codecs=vp8',
+                    'video/webm;codecs="vp9"',
+                    'video/webm;codecs="vp8"', 
+                    'video/webm'
+                ];
+                
+                for (const type of webmTypes) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        formats.webm = type;
+                        console.log(`WebM 支援格式: ${type}`);
+                        break;
+                    }
+                }
+                
+                console.log('支援的格式:', formats);
+                return formats;
+            }
+            
+            downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            reset() {
+                this.cropEnabled = false;
+                this.aspectRatio = null;
+                this.cropOverlay.style.display = 'none';
+                this.cropInfo.style.display = 'none';
+                this.previewSection.style.display = 'none';
+                
+                this.enableCropBtn.innerHTML = '✂️ 開始裁切';
+                this.enableCropBtn.className = 'btn btn-primary';
+                this.previewBtn.disabled = true;
+                this.downloadBtn.disabled = true;
+                
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                
+                if (this.videoPlayer.src) {
+                    this.initializeCropArea();
+                }
+                
+                this.showStatus('已重設所有設定', 'success');
+            }
+            
+            showProgress(percent, text) {
+                this.progressContainer.style.display = 'block';
+                document.getElementById('progressFill').style.width = percent + '%';
+                document.getElementById('progressText').textContent = text || '處理中...';
+            }
+            
+            hideProgress() {
+                this.progressContainer.style.display = 'none';
+            }
+            
+            showStatus(message, type) {
+                this.statusMessage.textContent = message;
+                this.statusMessage.className = `status-message status-${type}`;
+                this.statusMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.statusMessage.style.display = 'none';
+                }, 4000);
+            }
+            
+            handleKeydown(e) {
+                if (e.key === 'Escape' && this.cropEnabled) {
+                    this.toggleCrop();
+                }
+                
+                if (e.key === ' ' && this.videoPlayer.src) {
+                    e.preventDefault();
+                    if (this.videoPlayer.paused) {
+                        this.videoPlayer.play();
+                        if (this.previewSection.style.display === 'block') {
+                            this.generatePreview();
+                        }
+                    } else {
+                        this.videoPlayer.pause();
+                    }
+                }
+                
+                if (this.cropEnabled && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    e.preventDefault();
+                    const step = e.shiftKey ? 10 : 1;
+                    
+                    switch(e.key) {
+                        case 'ArrowUp':
+                            this.cropData.y = Math.max(0, this.cropData.y - step);
+                            break;
+                        case 'ArrowDown':
+                            this.cropData.y = Math.min(
+                                this.videoPlayer.getBoundingClientRect().height - this.cropData.height,
+                                this.cropData.y + step
+                            );
+                            break;
+                        case 'ArrowLeft':
+                            this.cropData.x = Math.max(0, this.cropData.x - step);
+                            break;
+                        case 'ArrowRight':
+                            this.cropData.x = Math.min(
+                                this.videoPlayer.getBoundingClientRect().width - this.cropData.width,
+                                this.cropData.x + step
+                            );
+                            break;
+                    }
+                    
+                    this.updateCropOverlay();
+                }
+            }
+        }
+        
+        // 初始化應用程式
+        document.addEventListener('DOMContentLoaded', () => {
+            new VideoCropTool();
+        });
+    </script>
+</body>
+</html>
+                        

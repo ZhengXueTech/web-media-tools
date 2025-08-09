@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>網頁螢幕截圖</title>
+    <!-- 引入 Tailwind CSS CDN 以便快速造型 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定義字體為 Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-xl">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                網頁螢幕截圖工具
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-600">
+                請點擊「開始螢幕分享」按鈕，並在彈出視窗中選擇您要截圖的螢幕、視窗或分頁。截圖後，您可以選擇裁剪圖片。
+            </p>
+        </div>
+
+        <div class="flex flex-col items-center space-y-4">
+            <button id="startButton" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                開始螢幕分享
+            </button>
+            <button id="captureButton" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out hidden">
+                截圖
+            </button>
+            <button id="editButton" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out hidden">
+                啟用編輯模式 (裁剪)
+            </button>
+            <button id="cropDownloadButton" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out hidden">
+                裁剪並下載
+            </button>
+        </div>
+
+        <!-- 顯示螢幕分享內容的視訊區塊 -->
+        <div class="mt-8">
+            <video id="screenVideo" autoplay class="w-full rounded-md shadow-inner hidden border border-gray-300"></video>
+        </div>
+
+        <!-- 顯示截圖結果的畫布區塊 -->
+        <div class="mt-8 flex justify-center">
+            <canvas id="screenshotCanvas" class="border border-gray-300 rounded-md shadow-md hidden"></canvas>
+        </div>
+
+        <!-- 截圖下載連結 -->
+        <div class="mt-4 text-center">
+            <a id="downloadLink" download="screenshot.png" class="font-medium text-indigo-600 hover:text-indigo-500 hidden" href="#">
+                點此下載截圖
+            </a>
+        </div>
+    </div>
+
+    <!-- Custom Modal for Messages -->
+    <div id="customModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <p id="modalMessage" class="text-center text-gray-800 text-lg mb-4"></p>
+            <button id="modalCloseButton" class="w-full py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                確定
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const captureButton = document.getElementById('captureButton');
+        const editButton = document.getElementById('editButton'); // 新增的編輯按鈕
+        const cropDownloadButton = document.getElementById('cropDownloadButton'); // 新增的裁剪下載按鈕
+        const screenVideo = document.getElementById('screenVideo');
+        const screenshotCanvas = document.getElementById('screenshotCanvas');
+        const downloadLink = document.getElementById('downloadLink');
+
+        const ctx = screenshotCanvas.getContext('2d'); // 取得 Canvas 2D 繪圖上下文
+
+        let mediaStream = null; // 用來儲存螢幕分享的媒體串流
+
+        // 裁剪相關變數
+        let isCroppingMode = false;
+        let isDrawing = false;
+        let startX, startY;
+        let cropRect = { x: 0, y: 0, width: 0, height: 0 };
+        let originalScreenshotImage = new Image(); // 用來儲存原始截圖的圖片物件
+
+        // 自定義彈出視窗元素
+        const customModal = document.getElementById('customModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseButton = document.getElementById('modalCloseButton');
+
+        // 顯示自定義彈出視窗
+        function showModal(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+            customModal.classList.add('flex'); // 使用 flexbox 居中
+        }
+
+        // 隱藏自定義彈出視窗
+        function hideModal() {
+            customModal.classList.add('hidden');
+            customModal.classList.remove('flex');
+        }
+
+        // 為彈出視窗的關閉按鈕添加事件監聽器
+        modalCloseButton.addEventListener('click', hideModal);
+
+        // 監聽「開始螢幕分享」按鈕點擊事件
+        startButton.addEventListener('click', async () => {
+            try {
+                // 檢查瀏覽器是否支援螢幕分享 API
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    showModal('您的瀏覽器不支援螢幕分享功能。請使用最新版的 Chrome, Firefox 或 Edge。');
+                    return;
+                }
+
+                // 請求螢幕分享，只要求視訊軌道
+                mediaStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+
+                // 將取得的媒體串流設定為視訊元素的來源
+                screenVideo.srcObject = mediaStream;
+                screenVideo.classList.remove('hidden'); // 顯示視訊元素
+                captureButton.classList.remove('hidden'); // 顯示截圖按鈕
+                startButton.classList.add('hidden'); // 隱藏開始按鈕
+
+                // 監聽媒體串流的結束事件 (例如使用者停止分享或關閉分享視窗)
+                mediaStream.getVideoTracks()[0].onended = () => {
+                    stopScreenCapture(); // 呼叫停止截圖函數
+                };
+
+            } catch (err) {
+                // 處理可能發生的錯誤，例如使用者拒絕分享
+                console.error('取得螢幕分享時發生錯誤:', err);
+                if (err.name === 'NotAllowedError') {
+                    showModal('您拒絕了螢幕分享，或瀏覽器不允許此操作。');
+                } else {
+                    showModal('啟動螢幕分享時發生錯誤，請檢查瀏覽器設定或權限。');
+                }
+                stopScreenCapture(); // 確保錯誤時也重置介面
+            }
+        });
+
+        // 監聽「截圖」按鈕點擊事件
+        captureButton.addEventListener('click', () => {
+            // 確保視訊串流已經開始並且有足夠的資料可以繪製
+            if (screenVideo.srcObject && screenVideo.readyState === screenVideo.HAVE_ENOUGH_DATA) {
+                // 將 Canvas 的寬度和高度設定為與視訊串流的實際解析度相同
+                screenshotCanvas.width = screenVideo.videoWidth;
+                screenshotCanvas.height = screenVideo.videoHeight;
+
+                // 將視訊元素當前幀的內容繪製到 Canvas 上
+                ctx.drawImage(screenVideo, 0, 0, screenshotCanvas.width, screenshotCanvas.height);
+
+                // 將 Canvas 的內容轉換為圖片 URL，並儲存到原始圖片物件
+                originalScreenshotImage.src = screenshotCanvas.toDataURL('image/png');
+
+                screenshotCanvas.classList.remove('hidden'); // 顯示截圖畫布
+                editButton.classList.remove('hidden'); // 顯示編輯按鈕
+                captureButton.classList.add('hidden'); // 隱藏截圖按鈕
+
+                showModal('截圖已成功產生！您可以點擊「啟用編輯模式」進行裁剪。');
+            } else {
+                showModal('請先開始螢幕分享，並等待畫面載入後再進行截圖。');
+            }
+        });
+
+        // 監聽「啟用編輯模式 (裁剪)」按鈕點擊事件
+        editButton.addEventListener('click', () => {
+            if (originalScreenshotImage.src) {
+                isCroppingMode = true;
+                editButton.classList.add('hidden'); // 隱藏編輯按鈕
+                cropDownloadButton.classList.remove('hidden'); // 顯示裁剪下載按鈕
+                downloadLink.classList.add('hidden'); // 隱藏下載連結 (如果顯示的話)
+                startButton.classList.add('hidden'); // 隱藏開始按鈕
+
+                // 重繪原始圖片到 Canvas 上，以便進行裁剪選擇
+                ctx.clearRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+                ctx.drawImage(originalScreenshotImage, 0, 0, screenshotCanvas.width, screenshotCanvas.height);
+                
+                showModal('已啟用裁剪模式。請在截圖上拖曳滑鼠選擇要保留的區域。');
+            } else {
+                showModal('請先進行截圖才能啟用編輯模式。');
+            }
+        });
+
+        // 監聽 Canvas 滑鼠事件 (用於裁剪模式)
+        screenshotCanvas.addEventListener('mousedown', (e) => {
+            if (isCroppingMode) {
+                isDrawing = true;
+                startX = e.offsetX;
+                startY = e.offsetY;
+            }
+        });
+
+        screenshotCanvas.addEventListener('mousemove', (e) => {
+            if (isCroppingMode && isDrawing) {
+                const currentX = e.offsetX;
+                const currentY = e.offsetY;
+
+                // 清除 Canvas，重新繪製原始圖片
+                ctx.clearRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+                ctx.drawImage(originalScreenshotImage, 0, 0, screenshotCanvas.width, screenshotCanvas.height);
+
+                // 繪製選擇框
+                ctx.strokeStyle = '#FF0000'; // 紅色邊框
+                ctx.lineWidth = 2;
+                ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
+            }
+        });
+
+        screenshotCanvas.addEventListener('mouseup', (e) => {
+            if (isCroppingMode && isDrawing) {
+                isDrawing = false;
+                const endX = e.offsetX;
+                const endY = e.offsetY;
+
+                // 確定裁剪區域的座標和尺寸
+                cropRect.x = Math.min(startX, endX);
+                cropRect.y = Math.min(startY, endY);
+                cropRect.width = Math.abs(endX - startX);
+                cropRect.height = Math.abs(endY - startY);
+
+                // 如果裁剪區域尺寸為零或負數，則重置
+                if (cropRect.width <= 0 || cropRect.height <= 0) {
+                    showModal('裁剪區域無效，請重新選擇。');
+                    cropRect = { x: 0, y: 0, width: 0, height: 0 }; // 重置裁剪區域
+                    ctx.clearRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+                    ctx.drawImage(originalScreenshotImage, 0, 0, screenshotCanvas.width, screenshotCanvas.height);
+                } else {
+                    showModal('裁剪區域已選定。點擊「裁剪並下載」按鈕進行下載。');
+                }
+            }
+        });
+
+        // 監聽「裁剪並下載」按鈕點擊事件
+        cropDownloadButton.addEventListener('click', () => {
+            if (originalScreenshotImage.src && cropRect.width > 0 && cropRect.height > 0) {
+                // 創建一個新的臨時 Canvas 用於裁剪後的圖片
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+
+                tempCanvas.width = cropRect.width;
+                tempCanvas.height = cropRect.height;
+
+                // 將原始圖片的裁剪區域繪製到新 Canvas 上
+                tempCtx.drawImage(
+                    originalScreenshotImage,
+                    cropRect.x,
+                    cropRect.y,
+                    cropRect.width,
+                    cropRect.height,
+                    0,
+                    0,
+                    cropRect.width,
+                    cropRect.height
+                );
+
+                // 將新 Canvas 的內容轉換為圖片 URL
+                downloadLink.href = tempCanvas.toDataURL('image/png');
+                downloadLink.download = 'cropped_screenshot.png'; // 更改下載檔案名
+                downloadLink.classList.remove('hidden'); // 顯示下載連結
+                cropDownloadButton.classList.add('hidden'); // 隱藏裁剪下載按鈕
+                editButton.classList.add('hidden'); // 隱藏編輯按鈕
+                startButton.classList.remove('hidden'); // 顯示開始按鈕
+
+                showModal('裁剪後的圖片已準備好下載！');
+                // 重置裁剪狀態，準備下一次操作
+                resetCroppingState();
+
+            } else {
+                showModal('請先選定有效的裁剪區域！');
+            }
+        });
+
+        // 停止螢幕分享並重置介面狀態的函數
+        function stopScreenCapture() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            screenVideo.srcObject = null;
+            screenVideo.classList.add('hidden');
+            captureButton.classList.add('hidden');
+            editButton.classList.add('hidden');
+            cropDownloadButton.classList.add('hidden');
+            downloadLink.classList.add('hidden');
+            startButton.classList.remove('hidden'); // 重新顯示開始按鈕
+            
+            ctx.clearRect(0, 0, screenshotCanvas.width, screenshotCanvas.height);
+            screenshotCanvas.width = 0;
+            screenshotCanvas.height = 0;
+            screenshotCanvas.classList.add('hidden'); // 隱藏截圖畫布
+
+            originalScreenshotImage.src = ''; // 清空原始截圖
+            resetCroppingState(); // 重置裁剪狀態
+
+            console.log('螢幕分享已停止，介面已重置。');
+        }
+
+        // 重置裁剪相關狀態的函數
+        function resetCroppingState() {
+            isCroppingMode = false;
+            isDrawing = false;
+            startX = 0;
+            startY = 0;
+            cropRect = { x: 0, y: 0, width: 0, height: 0 };
+            // 注意：Canvas 滑鼠事件監聽器現在始終存在，但其效果由 `isCroppingMode` 控制。
+        }
+
+    </script>
+</body>
+</html>

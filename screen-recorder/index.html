@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桌面螢幕錄影工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .recording-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .option-btn {
+            padding: 12px 20px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .option-btn:hover::before,
+        .option-btn.active::before {
+            left: 0;
+        }
+
+        .option-btn:hover,
+        .option-btn.active {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .control-panel {
+            margin: 30px 0;
+        }
+
+        .main-btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(76, 175, 80, 0.3);
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            display: none;
+        }
+
+        .stop-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(244, 67, 54, 0.3);
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status.ready {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+
+        .status.recording {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            font-family: monospace;
+            color: #333;
+        }
+
+        .downloads {
+            margin-top: 30px;
+        }
+
+        .download-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .download-btn {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .area-selector {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            cursor: crosshair;
+        }
+
+        .selection-box {
+            position: absolute;
+            border: 2px dashed #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .selection-info {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .help-text {
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .recording-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .option-btn {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 螢幕錄影工具</h1>
+        
+
+
+        <div class="status ready">
+            <span id="status-text">準備就緒 - 點擊開始錄製，瀏覽器會讓您選擇要錄製的內容</span>
+        </div>
+
+        <div class="timer" id="timer">00:00:00</div>
+
+        <div class="control-panel">
+            <button class="main-btn start-btn" id="startBtn">開始錄製</button>
+            <button class="main-btn stop-btn" id="stopBtn">停止錄製</button>
+        </div>
+
+        <div class="downloads" id="downloads"></div>
+
+        <div class="help-text">
+            <p><strong>使用說明：</strong></p>
+            <p>• 點擊「開始錄製」後，瀏覽器會彈出選擇器</p>
+            <p>• 可選擇：整個螢幕、特定視窗、或瀏覽器分頁</p>
+            <p>• 錄製完成後點擊「停止錄製」並下載檔案</p>
+        </div>
+    </div>
+
+    <div class="area-selector" id="areaSelector">
+        <div class="selection-box" id="selectionBox"></div>
+        <div class="selection-info" id="selectionInfo"></div>
+    </div>
+
+    <script>
+        class ScreenRecorder {
+            constructor() {
+                this.mediaRecorder = null;
+                this.recordedChunks = [];
+                this.stream = null;
+                this.isRecording = false;
+                this.startTime = null;
+                this.timerInterval = null;
+
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.startBtn = document.getElementById('startBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.statusText = document.getElementById('status-text');
+                this.timer = document.getElementById('timer');
+                this.downloads = document.getElementById('downloads');
+                this.status = document.querySelector('.status');
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.startRecording());
+                this.stopBtn.addEventListener('click', () => this.stopRecording());
+            }
+
+            async startRecording() {
+                try {
+                    await this.actuallyStartRecording();
+                } catch (error) {
+                    console.error('開始錄製時發生錯誤:', error);
+                    this.statusText.textContent = '錄製失敗: ' + error.message;
+                    this.resetToReady();
+                }
+            }
+
+            bindAreaSelectionEvents() {
+                // 移除區域選擇相關代碼
+            }
+
+            async actuallyStartRecording() {
+                try {
+                    // 取得螢幕串流
+                    this.stream = await this.getMediaStream();
+                    
+                    this.recordedChunks = [];
+                    this.mediaRecorder = new MediaRecorder(this.stream, {
+                        mimeType: 'video/mp4'
+                    });
+
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.recordedChunks.push(event.data);
+                        }
+                    };
+
+                    this.mediaRecorder.onstop = () => {
+                        this.saveRecording();
+                    };
+
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    
+                    // 更新 UI
+                    this.startBtn.style.display = 'none';
+                    this.stopBtn.style.display = 'inline-block';
+                    this.status.classList.remove('ready');
+                    this.status.classList.add('recording');
+                    this.statusText.textContent = '錄製中...';
+                    
+                    // 開始計時器
+                    this.startTimer();
+
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            async getMediaStream() {
+                const constraints = {
+                    video: true,
+                    audio: true
+                };
+
+                return await navigator.mediaDevices.getDisplayMedia(constraints);
+            }
+
+            stopRecording() {
+                if (this.mediaRecorder && this.isRecording) {
+                    this.mediaRecorder.stop();
+                    this.stream.getTracks().forEach(track => track.stop());
+                    
+                    this.isRecording = false;
+                    this.stopTimer();
+                    this.resetToReady();
+                }
+            }
+
+            startTimer() {
+                this.startTime = Date.now();
+                this.timerInterval = setInterval(() => {
+                    const elapsed = Date.now() - this.startTime;
+                    const seconds = Math.floor(elapsed / 1000) % 60;
+                    const minutes = Math.floor(elapsed / (1000 * 60)) % 60;
+                    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+                    
+                    this.timer.textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+
+            resetToReady() {
+                this.startBtn.style.display = 'inline-block';
+                this.stopBtn.style.display = 'none';
+                this.status.classList.remove('recording');
+                this.status.classList.add('ready');
+                this.statusText.textContent = '準備就緒 - 點擊開始錄製，瀏覽器會讓您選擇要錄製的內容';
+                this.timer.textContent = '00:00:00';
+            }
+
+            saveRecording() {
+                if (this.recordedChunks.length === 0) return;
+
+                const blob = new Blob(this.recordedChunks, { type: 'video/mp4' });
+                const url = URL.createObjectURL(blob);
+                const timestamp = new Date().toLocaleString('zh-TW');
+                
+                this.addDownloadItem(url, `螢幕錄影_${timestamp}.mp4`, blob.size);
+            }
+
+            addDownloadItem(url, filename, size) {
+                const downloadItem = document.createElement('div');
+                downloadItem.className = 'download-item';
+                
+                const fileInfo = document.createElement('div');
+                fileInfo.innerHTML = `
+                    <div><strong>${filename}</strong></div>
+                    <div style="color: #666; font-size: 12px;">${this.formatFileSize(size)}</div>
+                `;
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'download-btn';
+                downloadBtn.textContent = '下載';
+                downloadBtn.onclick = () => {
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+                
+                downloadItem.appendChild(fileInfo);
+                downloadItem.appendChild(downloadBtn);
+                this.downloads.appendChild(downloadItem);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+        }
+
+        // 初始化應用程式
+        window.addEventListener('DOMContentLoaded', () => {
+            // 檢查瀏覽器支援
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                alert('您的瀏覽器不支援螢幕錄製功能。請使用較新版本的 Chrome、Firefox 或 Edge。');
+                return;
+            }
+
+            new ScreenRecorder();
+        });
+    </script>
+</body>
+</html>
