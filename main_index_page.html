@@ -376,13 +376,14 @@
         .tool-card:nth-child(2) { animation-delay: 0.2s; }
         .tool-card:nth-child(3) { animation-delay: 0.3s; }
         .tool-card:nth-child(4) { animation-delay: 0.4s; }
+        .tool-card:nth-child(5) { animation-delay: 0.5s; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎬 Web Media Tools</h1>
-            <p>專業多媒體工具集合，完全基於瀏覽器技術實現，無需安裝任何軟體。支援錄影、截圖、螢幕錄製和影片編輯等功能。</p>
+            <p>專業多媒體工具集合，完全基於瀏覽器技術實現，無需安裝任何軟體。支援錄影、截圖、螢幕錄製、影片編輯和創意設計等功能。</p>
             
             <!-- 技術標籤區域 - 可選擇移除或修改 -->
             <div class="tech-stack">
@@ -457,6 +458,19 @@
                 </ul>
                 <button class="use-tool-btn">立即使用</button>
             </div>
+
+            <div class="tool-card" onclick="openTool('qrcode', '🎨 QR Code 明信片工具')">
+                <span class="tool-icon">🎨</span>
+                <h2 class="tool-title">QR Code 明信片工具</h2>
+                <p class="tool-description">創意明信片設計工具，整合 QR Code 生成和圖片編輯功能</p>
+                <ul class="tool-features">
+                    <li>自訂背景圖片，支援多種解析度設定</li>
+                    <li>美化 QR Code 生成，支援圓角和陰影</li>
+                    <li>拖拽式文字編輯，多樣化字體設定</li>
+                    <li>支援 PNG/JPEG/WebP 格式輸出</li>
+                </ul>
+                <button class="use-tool-btn">立即使用</button>
+            </div>
         </div>
 
         <div class="browser-support">
@@ -492,9 +506,9 @@
             <p>🔒 所有處理均在本地完成，保護您的隱私安全</p>
             <p style="margin-top: 10px;">
                 Made with ❤️ by 
-                <a href="https://zhengxuetech.github.io/web-media-tools/" target="_blank">Your Name</a>
+                <a href="https://github.com/your-username" target="_blank">Your Name</a>
                 | 
-                <a href="https://zhengxuetech.github.io/web-media-tools/" target="_blank">View on GitHub</a>
+                <a href="https://github.com/your-username/web-media-tools" target="_blank">View on GitHub</a>
             </p>
         </div>
     </div>
@@ -521,7 +535,8 @@
                 'camera': './camera-timer-recorder/index.html',
                 'screen': './screen-recorder/index.html', 
                 'screenshot': './screenshot-tool/index.html',
-                'video-crop': './video-crop-tool/index.html'
+                'video-crop': './video-crop-tool/index.html',
+                'qrcode': './qrcode-tool/index.html'
             };
             
             modalTitle.textContent = title;
