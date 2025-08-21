@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>明信片製作工具</title>
+    <title>QR Code 明信片製作工具</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <style>
         * {
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -69,6 +69,9 @@
             color: #333;
             margin-bottom: 15px;
             font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .file-input-wrapper {
@@ -123,6 +126,13 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            margin: 10px 0;
+        }
+
+        .range-group label {
+            min-width: 80px;
+            font-weight: 500;
+            color: #555;
         }
 
         input[type="range"] {
@@ -140,6 +150,13 @@
             border-radius: 50%;
             background: #667eea;
             cursor: pointer;
+        }
+
+        .range-value {
+            min-width: 60px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
         }
 
         .canvas-container {
@@ -249,6 +266,94 @@
             white-space: nowrap;
         }
 
+        .qr-position-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .position-btn {
+            padding: 8px;
+            border: 2px solid #e1e5e9;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .position-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .position-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .position-btn[data-position="custom"] {
+            grid-column: span 3;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border-color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .position-btn[data-position="custom"]:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .position-btn[data-position="custom"].active {
+            background: linear-gradient(45deg, #2E7D32, #1B5E20);
+            border-color: #2E7D32;
+        }
+
+        #qrPositionInfo {
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        #qrPositionInfo.highlight {
+            opacity: 1;
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .qr-style-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .qr-style-option {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .qr-style-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .qr-style-option.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
         .download-section {
             grid-column: span 2;
             text-align: center;
@@ -303,6 +408,35 @@
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
+        }
+
+        .error-correction-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .error-correction-btn {
+            padding: 8px 4px;
+            border: 2px solid #e1e5e9;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .error-correction-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .error-correction-btn.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -362,6 +496,7 @@
             .range-group label {
                 font-size: 14px;
                 font-weight: bold;
+                min-width: auto;
             }
             
             input[type="range"] {
@@ -434,12 +569,27 @@
                 line-height: 1.3;
                 word-break: break-word;
             }
+
+            .qr-position-controls {
+                grid-template-columns: 1fr 1fr;
+                gap: 5px;
+            }
+
+            .qr-style-grid {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .error-correction-selector {
+                grid-template-columns: 1fr 1fr;
+                gap: 5px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎨 明信片製作工具</h1>
+        <h1>🎨 QR Code 明信片製作工具</h1>
         
         <div class="main-content">
             <div class="controls">
@@ -456,7 +606,7 @@
 
                 <!-- 解析度設定 -->
                 <div class="control-group">
-                    <h3>📐 解析度設定</h3>
+                    <h3>📏 解析度設定</h3>
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                         <label>
                             <input type="radio" name="resolution" value="original" checked>
@@ -481,10 +631,88 @@
                 <div class="control-group">
                     <h3>🔗 QR Code 設定</h3>
                     <input type="url" id="urlInput" placeholder="輸入網址 (例如: https://example.com)">
-                    <div class="range-group" style="margin-top: 10px;">
+                    
+                    <div class="range-group">
                         <label>大小:</label>
-                        <input type="range" id="qrSize" min="50" max="300" value="150">
-                        <span id="qrSizeValue">150px</span>
+                        <input type="range" id="qrSize" min="50" max="400" value="150">
+                        <span id="qrSizeValue" class="range-value">150px</span>
+                    </div>
+
+                    <div class="range-group">
+                        <label>圓角:</label>
+                        <input type="range" id="qrRadius" min="0" max="30" value="12">
+                        <span id="qrRadiusValue" class="range-value">12px</span>
+                    </div>
+
+                    <div class="range-group">
+                        <label>陰影:</label>
+                        <input type="range" id="qrShadow" min="0" max="20" value="8">
+                        <span id="qrShadowValue" class="range-value">8px</span>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="margin-bottom: 8px; display: block; font-weight: 500;">QR Code 顏色:</label>
+                        <div class="color-input-wrapper">
+                            <span>前景:</span>
+                            <input type="color" id="qrForegroundColor" value="#2C3E50">
+                            <span>背景:</span>
+                            <input type="color" id="qrBackgroundColor" value="#FFFFFF">
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="margin-bottom: 8px; display: block; font-weight: 500;">錯誤修正等級:</label>
+                        <div class="error-correction-selector">
+                            <button type="button" class="error-correction-btn active" data-level="L">低 (7%)</button>
+                            <button type="button" class="error-correction-btn" data-level="M">中 (15%)</button>
+                            <button type="button" class="error-correction-btn" data-level="Q">高 (25%)</button>
+                            <button type="button" class="error-correction-btn" data-level="H">最高 (30%)</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="margin-bottom: 8px; display: block; font-weight: 500;">QR Code 位置:</label>
+                        <div class="qr-position-controls">
+                            <button type="button" class="position-btn" data-position="top-left">左上</button>
+                            <button type="button" class="position-btn" data-position="top-center">上中</button>
+                            <button type="button" class="position-btn" data-position="top-right">右上</button>
+                            <button type="button" class="position-btn" data-position="center-left">左中</button>
+                            <button type="button" class="position-btn" data-position="center">中央</button>
+                            <button type="button" class="position-btn" data-position="center-right">右中</button>
+                            <button type="button" class="position-btn" data-position="bottom-left">左下</button>
+                            <button type="button" class="position-btn" data-position="bottom-center">下中</button>
+                            <button type="button" class="position-btn active" data-position="bottom-right">右下</button>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <button type="button" class="position-btn" data-position="custom" id="customPositionBtn">
+                                🎯 自定義位置 (拖拽移動)
+                            </button>
+                        </div>
+                        <div id="qrPositionInfo" style="margin-top: 8px; font-size: 12px; color: #666; text-align: center;">
+                            提示：選擇自定義位置後，可在畫布上拖拽 QR Code
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <label style="margin-bottom: 8px; display: block; font-weight: 500;">QR Code 樣式:</label>
+                        <div class="qr-style-grid">
+                            <div class="qr-style-option active" data-style="rounded">
+                                <div style="font-weight: bold;">圓角方塊</div>
+                                <div style="font-size: 11px; color: #666;">現代感設計</div>
+                            </div>
+                            <div class="qr-style-option" data-style="square">
+                                <div style="font-weight: bold;">方形方塊</div>
+                                <div style="font-size: 11px; color: #666;">經典樣式</div>
+                            </div>
+                            <div class="qr-style-option" data-style="circle">
+                                <div style="font-weight: bold;">圓形方塊</div>
+                                <div style="font-size: 11px; color: #666;">柔和風格</div>
+                            </div>
+                            <div class="qr-style-option" data-style="gradient">
+                                <div style="font-weight: bold;">漸層樣式</div>
+                                <div style="font-size: 11px; color: #666;">時尚設計</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -493,8 +721,11 @@
                     <h3>✏️ 文字編輯</h3>
                     <textarea id="textInput" placeholder="輸入要添加的文字" rows="3"></textarea>
                     <div class="text-controls">
-                        <input type="range" id="fontSize" min="12" max="72" value="24">
-                        <span id="fontSizeValue">24px</span>
+                        <div class="range-group">
+                            <label>字體大小:</label>
+                            <input type="range" id="fontSize" min="12" max="72" value="24">
+                            <span id="fontSizeValue" class="range-value">24px</span>
+                        </div>
                         <div class="color-input-wrapper">
                             <label>顏色:</label>
                             <input type="color" id="textColor" value="#000000">
@@ -539,6 +770,12 @@
                 this.selectedTextIndex = -1;
                 this.isDragging = false;
                 this.dragOffset = { x: 0, y: 0 };
+                this.qrPosition = 'bottom-right';
+                this.qrStyle = 'rounded';
+                this.errorCorrectionLevel = 'L';
+                this.customQrPosition = { x: null, y: null };
+                this.isDraggingQr = false;
+                this.qrDragOffset = { x: 0, y: 0 };
                 
                 this.initCanvas();
                 this.setupEventListeners();
@@ -598,14 +835,63 @@
                     });
                 }
 
-                const qrSize = document.getElementById('qrSize');
-                const qrSizeValue = document.getElementById('qrSizeValue');
-                if (qrSize && qrSizeValue) {
-                    qrSize.addEventListener('input', (e) => {
-                        qrSizeValue.textContent = e.target.value + 'px';
+                // QR Code 控制項
+                this.setupQRControls();
+
+                // QR Code 位置按鈕
+                document.querySelectorAll('.position-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.qrPosition = e.target.dataset.position;
+                        
+                        const positionInfo = document.getElementById('qrPositionInfo');
+                        if (this.qrPosition === 'custom') {
+                            if (positionInfo) {
+                                positionInfo.textContent = '自定義模式已啟用！在畫布上拖拽 QR Code 到您想要的位置';
+                                positionInfo.classList.add('highlight');
+                            }
+                            // 如果還沒有自定義位置，設置一個預設位置
+                            if (this.customQrPosition.x === null) {
+                                this.customQrPosition.x = this.canvas.width - 170;
+                                this.customQrPosition.y = this.canvas.height - 170;
+                            }
+                        } else {
+                            if (positionInfo) {
+                                positionInfo.textContent = '提示：選擇自定義位置後，可在畫布上拖拽 QR Code';
+                                positionInfo.classList.remove('highlight');
+                            }
+                        }
+                        
                         this.redraw();
                     });
-                }
+                });
+
+                // QR Code 樣式按鈕
+                document.querySelectorAll('.qr-style-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        document.querySelectorAll('.qr-style-option').forEach(o => o.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.qrStyle = e.currentTarget.dataset.style;
+                        const urlInput = document.getElementById('urlInput');
+                        if (urlInput && urlInput.value) {
+                            this.generateQRCode(urlInput.value);
+                        }
+                    });
+                });
+
+                // 錯誤修正等級按鈕
+                document.querySelectorAll('.error-correction-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.error-correction-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.errorCorrectionLevel = e.target.dataset.level;
+                        const urlInput = document.getElementById('urlInput');
+                        if (urlInput && urlInput.value) {
+                            this.generateQRCode(urlInput.value);
+                        }
+                    });
+                });
 
                 // 文字相關
                 const addTextBtn = document.getElementById('addTextBtn');
@@ -668,6 +954,48 @@
                 if (downloadBtn) {
                     downloadBtn.addEventListener('click', () => {
                         this.downloadPostcard();
+                    });
+                }
+            }
+
+            setupQRControls() {
+                const controls = [
+                    { id: 'qrSize', valueId: 'qrSizeValue', suffix: 'px' },
+                    { id: 'qrRadius', valueId: 'qrRadiusValue', suffix: 'px' },
+                    { id: 'qrShadow', valueId: 'qrShadowValue', suffix: 'px' }
+                ];
+
+                controls.forEach(control => {
+                    const element = document.getElementById(control.id);
+                    const valueElement = document.getElementById(control.valueId);
+                    
+                    if (element && valueElement) {
+                        element.addEventListener('input', (e) => {
+                            valueElement.textContent = e.target.value + control.suffix;
+                            this.redraw();
+                        });
+                    }
+                });
+
+                // QR Code 顏色控制
+                const qrForegroundColor = document.getElementById('qrForegroundColor');
+                const qrBackgroundColor = document.getElementById('qrBackgroundColor');
+
+                if (qrForegroundColor) {
+                    qrForegroundColor.addEventListener('input', () => {
+                        const urlInput = document.getElementById('urlInput');
+                        if (urlInput && urlInput.value) {
+                            this.generateQRCode(urlInput.value);
+                        }
+                    });
+                }
+
+                if (qrBackgroundColor) {
+                    qrBackgroundColor.addEventListener('input', () => {
+                        const urlInput = document.getElementById('urlInput');
+                        if (urlInput && urlInput.value) {
+                            this.generateQRCode(urlInput.value);
+                        }
                     });
                 }
             }
@@ -768,7 +1096,7 @@
                 }
 
                 try {
-                    const qr = qrcode(0, 'M');
+                    const qr = qrcode(0, this.errorCorrectionLevel);
                     qr.addData(url);
                     qr.make();
                     
@@ -781,35 +1109,31 @@
                     canvas.height = size;
                     const ctx = canvas.getContext('2d');
                     
-                    const radius = 12;
-                    ctx.fillStyle = '#FFFFFF';
+                    const radius = parseInt(document.getElementById('qrRadius')?.value || 12);
+                    const shadowBlur = parseInt(document.getElementById('qrShadow')?.value || 8);
+                    const foregroundColor = document.getElementById('qrForegroundColor')?.value || '#2C3E50';
+                    const backgroundColor = document.getElementById('qrBackgroundColor')?.value || '#FFFFFF';
+                    
+                    // 背景
+                    ctx.fillStyle = backgroundColor;
                     this.roundRect(ctx, 0, 0, size, size, radius);
                     ctx.fill();
                     
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-                    ctx.shadowBlur = 8;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 2;
-                    
-                    ctx.fillStyle = '#2C3E50';
-                    for (let row = 0; row < qr.getModuleCount(); row++) {
-                        for (let col = 0; col < qr.getModuleCount(); col++) {
-                            if (qr.isDark(row, col)) {
-                                const x = col * cellSize + margin;
-                                const y = row * cellSize + margin;
-                                
-                                const moduleRadius = cellSize * 0.2;
-                                this.roundRect(ctx, x, y, cellSize - 1, cellSize - 1, moduleRadius);
-                                ctx.fill();
-                            }
-                        }
+                    // 陰影
+                    if (shadowBlur > 0) {
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                        ctx.shadowBlur = shadowBlur;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 2;
                     }
+                    
+                    // 繪製 QR Code 模組
+                    this.drawQRModules(ctx, qr, cellSize, margin, foregroundColor);
                     
                     ctx.shadowColor = 'transparent';
                     
-                    this.drawFinderPattern(ctx, margin, margin, cellSize);
-                    this.drawFinderPattern(ctx, margin + (qr.getModuleCount() - 7) * cellSize, margin, cellSize);
-                    this.drawFinderPattern(ctx, margin, margin + (qr.getModuleCount() - 7) * cellSize, cellSize);
+                    // 繪製尋找圖案
+                    this.drawFinderPatterns(ctx, qr, cellSize, margin, foregroundColor, backgroundColor);
                     
                     this.qrCodeImage = new Image();
                     this.qrCodeImage.onload = () => {
@@ -822,6 +1146,90 @@
                     this.showStatus('QR Code 生成失敗: ' + error.message, 'error');
                     console.error('QR Code generation error:', error);
                 }
+            }
+
+            drawQRModules(ctx, qr, cellSize, margin, foregroundColor) {
+                const moduleCount = qr.getModuleCount();
+                
+                for (let row = 0; row < moduleCount; row++) {
+                    for (let col = 0; col < moduleCount; col++) {
+                        if (qr.isDark(row, col) && !this.isFinderPattern(row, col, moduleCount)) {
+                            const x = col * cellSize + margin;
+                            const y = row * cellSize + margin;
+                            
+                            ctx.fillStyle = this.getModuleStyle(foregroundColor, row, col, moduleCount);
+                            this.drawModule(ctx, x, y, cellSize);
+                        }
+                    }
+                }
+            }
+
+            getModuleStyle(baseColor, row, col, moduleCount) {
+                if (this.qrStyle === 'gradient') {
+                    const gradient = this.ctx.createLinearGradient(0, 0, moduleCount * 8, moduleCount * 8);
+                    gradient.addColorStop(0, baseColor);
+                    gradient.addColorStop(1, this.adjustColor(baseColor, -30));
+                    return gradient;
+                }
+                return baseColor;
+            }
+
+            adjustColor(color, amount) {
+                const hex = color.replace('#', '');
+                const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
+                const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
+                const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
+                return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            }
+
+            drawModule(ctx, x, y, cellSize) {
+                const moduleRadius = this.qrStyle === 'circle' ? cellSize / 2 : 
+                                   this.qrStyle === 'rounded' ? cellSize * 0.2 : 0;
+                
+                if (this.qrStyle === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(x + cellSize/2, y + cellSize/2, cellSize/2 - 0.5, 0, 2 * Math.PI);
+                    ctx.fill();
+                } else if (moduleRadius > 0) {
+                    this.roundRect(ctx, x, y, cellSize - 1, cellSize - 1, moduleRadius);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+                }
+            }
+
+            isFinderPattern(row, col, moduleCount) {
+                // 檢查是否在尋找圖案範圍內
+                return (row < 9 && col < 9) || 
+                       (row < 9 && col >= moduleCount - 8) || 
+                       (row >= moduleCount - 8 && col < 9);
+            }
+
+            drawFinderPatterns(ctx, qr, cellSize, margin, foregroundColor, backgroundColor) {
+                const moduleCount = qr.getModuleCount();
+                
+                this.drawFinderPattern(ctx, margin, margin, cellSize, foregroundColor, backgroundColor);
+                this.drawFinderPattern(ctx, margin + (moduleCount - 7) * cellSize, margin, cellSize, foregroundColor, backgroundColor);
+                this.drawFinderPattern(ctx, margin, margin + (moduleCount - 7) * cellSize, cellSize, foregroundColor, backgroundColor);
+            }
+
+            drawFinderPattern(ctx, x, y, cellSize, foregroundColor, backgroundColor) {
+                const size = cellSize * 7;
+                
+                // 外框
+                ctx.fillStyle = foregroundColor;
+                this.roundRect(ctx, x, y, size, size, cellSize * 0.5);
+                ctx.fill();
+                
+                // 中間白色
+                ctx.fillStyle = backgroundColor;
+                this.roundRect(ctx, x + cellSize, y + cellSize, size - 2 * cellSize, size - 2 * cellSize, cellSize * 0.3);
+                ctx.fill();
+                
+                // 內部方塊
+                ctx.fillStyle = foregroundColor;
+                this.roundRect(ctx, x + 2 * cellSize, y + 2 * cellSize, size - 4 * cellSize, size - 4 * cellSize, cellSize * 0.2);
+                ctx.fill();
             }
 
             roundRect(ctx, x, y, width, height, radius) {
@@ -838,22 +1246,6 @@
                 ctx.closePath();
             }
 
-            drawFinderPattern(ctx, x, y, cellSize) {
-                const size = cellSize * 7;
-                
-                ctx.fillStyle = '#2C3E50';
-                this.roundRect(ctx, x, y, size, size, cellSize * 0.5);
-                ctx.fill();
-                
-                ctx.fillStyle = '#FFFFFF';
-                this.roundRect(ctx, x + cellSize, y + cellSize, size - 2 * cellSize, size - 2 * cellSize, cellSize * 0.3);
-                ctx.fill();
-                
-                ctx.fillStyle = '#667eea';
-                this.roundRect(ctx, x + 2 * cellSize, y + 2 * cellSize, size - 4 * cellSize, size - 4 * cellSize, cellSize * 0.2);
-                ctx.fill();
-            }
-
             isValidUrl(string) {
                 try {
                     new URL(string);
@@ -861,6 +1253,60 @@
                 } catch (_) {
                     return false;
                 }
+            }
+
+            getQRPosition(qrSize) {
+                if (this.qrPosition === 'custom' && this.customQrPosition.x !== null) {
+                    return {
+                        x: Math.max(0, Math.min(this.canvas.width - qrSize, this.customQrPosition.x)),
+                        y: Math.max(0, Math.min(this.canvas.height - qrSize, this.customQrPosition.y))
+                    };
+                }
+                
+                const margin = 20;
+                let x, y;
+                
+                switch (this.qrPosition) {
+                    case 'top-left':
+                        x = margin;
+                        y = margin;
+                        break;
+                    case 'top-center':
+                        x = (this.canvas.width - qrSize) / 2;
+                        y = margin;
+                        break;
+                    case 'top-right':
+                        x = this.canvas.width - qrSize - margin;
+                        y = margin;
+                        break;
+                    case 'center-left':
+                        x = margin;
+                        y = (this.canvas.height - qrSize) / 2;
+                        break;
+                    case 'center':
+                        x = (this.canvas.width - qrSize) / 2;
+                        y = (this.canvas.height - qrSize) / 2;
+                        break;
+                    case 'center-right':
+                        x = this.canvas.width - qrSize - margin;
+                        y = (this.canvas.height - qrSize) / 2;
+                        break;
+                    case 'bottom-left':
+                        x = margin;
+                        y = this.canvas.height - qrSize - margin;
+                        break;
+                    case 'bottom-center':
+                        x = (this.canvas.width - qrSize) / 2;
+                        y = this.canvas.height - qrSize - margin;
+                        break;
+                    case 'bottom-right':
+                    default:
+                        x = this.canvas.width - qrSize - margin;
+                        y = this.canvas.height - qrSize - margin;
+                        break;
+                }
+                
+                return { x, y };
             }
 
             addTextFromInput() {
@@ -1000,6 +1446,23 @@
                 const x = (e.clientX - rect.left) * scaleX;
                 const y = (e.clientY - rect.top) * scaleY;
 
+                // 檢查是否點擊了 QR Code
+                if (this.qrCodeImage && this.qrPosition === 'custom') {
+                    const qrSizeElement = document.getElementById('qrSize');
+                    const qrSize = qrSizeElement ? parseInt(qrSizeElement.value) : 150;
+                    const position = this.getQRPosition(qrSize);
+                    
+                    if (x >= position.x && x <= position.x + qrSize && 
+                        y >= position.y && y <= position.y + qrSize) {
+                        this.isDraggingQr = true;
+                        this.qrDragOffset.x = x - position.x;
+                        this.qrDragOffset.y = y - position.y;
+                        this.canvas.style.cursor = 'grabbing';
+                        return;
+                    }
+                }
+
+                // 檢查是否點擊了文字
                 for (let i = this.texts.length - 1; i >= 0; i--) {
                     const text = this.texts[i];
                     if (x >= text.x && x <= text.x + text.width && 
@@ -1020,22 +1483,53 @@
             }
 
             handleMouseMove(e) {
-                if (!this.isDragging || this.selectedTextIndex === -1) return;
-
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
                 const scaleY = this.canvas.height / rect.height;
                 const x = (e.clientX - rect.left) * scaleX;
                 const y = (e.clientY - rect.top) * scaleY;
 
-                this.texts[this.selectedTextIndex].x = x - this.dragOffset.x;
-                this.texts[this.selectedTextIndex].y = y - this.dragOffset.y;
-                
-                this.redraw();
+                // 拖拽 QR Code
+                if (this.isDraggingQr) {
+                    const qrSizeElement = document.getElementById('qrSize');
+                    const qrSize = qrSizeElement ? parseInt(qrSizeElement.value) : 150;
+                    
+                    this.customQrPosition.x = Math.max(0, Math.min(this.canvas.width - qrSize, x - this.qrDragOffset.x));
+                    this.customQrPosition.y = Math.max(0, Math.min(this.canvas.height - qrSize, y - this.qrDragOffset.y));
+                    
+                    this.redraw();
+                    return;
+                }
+
+                // 拖拽文字
+                if (this.isDragging && this.selectedTextIndex !== -1) {
+                    this.texts[this.selectedTextIndex].x = x - this.dragOffset.x;
+                    this.texts[this.selectedTextIndex].y = y - this.dragOffset.y;
+                    this.redraw();
+                    return;
+                }
+
+                // 滑鼠懸停效果
+                if (this.qrCodeImage && this.qrPosition === 'custom') {
+                    const qrSizeElement = document.getElementById('qrSize');
+                    const qrSize = qrSizeElement ? parseInt(qrSizeElement.value) : 150;
+                    const position = this.getQRPosition(qrSize);
+                    
+                    if (x >= position.x && x <= position.x + qrSize && 
+                        y >= position.y && y <= position.y + qrSize) {
+                        this.canvas.style.cursor = 'grab';
+                    } else {
+                        this.canvas.style.cursor = 'crosshair';
+                    }
+                } else {
+                    this.canvas.style.cursor = 'crosshair';
+                }
             }
 
             handleMouseUp() {
                 this.isDragging = false;
+                this.isDraggingQr = false;
+                this.canvas.style.cursor = 'crosshair';
             }
 
             handleDoubleClick(e) {
@@ -1102,13 +1596,19 @@
                     const qrSize = qrSizeElement ? parseInt(qrSizeElement.value) : 150;
                     const isMobile = window.innerWidth <= 768;
                     
-                    const actualQrSize = isMobile ? Math.min(qrSize, this.canvas.width * 0.2) : qrSize;
-                    const margin = isMobile ? 10 : 20;
+                    const actualQrSize = isMobile ? Math.min(qrSize, this.canvas.width * 0.3) : qrSize;
+                    const position = this.getQRPosition(actualQrSize);
                     
-                    const qrX = this.canvas.width - actualQrSize - margin;
-                    const qrY = this.canvas.height - actualQrSize - margin;
+                    // 如果是自定義模式，繪製拖拽提示邊框
+                    if (this.qrPosition === 'custom') {
+                        this.ctx.strokeStyle = '#4CAF50';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.setLineDash([5, 5]);
+                        this.ctx.strokeRect(position.x - 2, position.y - 2, actualQrSize + 4, actualQrSize + 4);
+                        this.ctx.setLineDash([]);
+                    }
                     
-                    this.ctx.drawImage(this.qrCodeImage, qrX, qrY, actualQrSize, actualQrSize);
+                    this.ctx.drawImage(this.qrCodeImage, position.x, position.y, actualQrSize, actualQrSize);
                 }
 
                 this.texts.forEach((text, index) => {
@@ -1138,7 +1638,7 @@
                 try {
                     const dataURL = this.canvas.toDataURL(mimeType, quality);
                     const link = document.createElement('a');
-                    link.download = `postcard.${format}`;
+                    link.download = `qr-postcard.${format}`;
                     link.href = dataURL;
                     link.click();
                     
