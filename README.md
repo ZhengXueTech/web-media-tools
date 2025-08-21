@@ -35,7 +35,7 @@
 - [螢幕錄影工具 Demo](https://ZhengXueTech.github.io/web-media-tools/screen-recorder/)
 - [螢幕截圖工具 Demo](https://ZhengXueTech.github.io/web-media-tools/screenshot-tool/)
 - [影片裁切工具 Demo](https://ZhengXueTech.github.io/web-media-tools/video-crop-tool/)
-- [明信片工具 Demo](https://ZhengXueTech.github.io/web-media-tools/video-crop-tool/)
+- [明信片工具 Demo](https://ZhengXueTech.github.io/web-media-tools/qrcode-tool/)
 ### 本地運行
 ```bash
 # 克隆倉庫
