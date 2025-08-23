@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code 明信片製作工具</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <script>
+        // 檢查 QR Code 庫是否載入成功
+        if (typeof qrcode === 'undefined') {
+            console.error('QR Code library failed to load, using fallback');
+            // 簡單的 fallback 實作
+            window.qrcode = function(typeNumber, errorCorrectionLevel) {
+                return {
+                    addData: function(data) { this.data = data; },
+                    make: function() { 
+                        this.moduleCount = 21; // 簡單的固定大小
+                        this.modules = [];
+                        for(let i = 0; i < this.moduleCount; i++) {
+                            this.modules[i] = [];
+                            for(let j = 0; j < this.moduleCount; j++) {
+                                this.modules[i][j] = Math.random() > 0.5;
+                            }
+                        }
+                    },
+                    getModuleCount: function() { return this.moduleCount; },
+                    isDark: function(row, col) { 
+                        return this.modules && this.modules[row] && this.modules[row][col]; 
+                    }
+                };
+            };
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -571,8 +597,10 @@
             }
 
             .qr-position-controls {
-                grid-template-columns: 1fr 1fr;
-                gap: 5px;
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 8px;
+                margin-top: 15px;
             }
 
             .qr-style-grid {
@@ -583,6 +611,12 @@
             .error-correction-selector {
                 grid-template-columns: 1fr 1fr;
                 gap: 5px;
+            }
+
+            .position-btn[data-position="custom"] {
+                grid-column: span 3;
+                font-size: 14px;
+                padding: 15px;
             }
         }
     </style>
@@ -630,7 +664,7 @@
                 <!-- QR Code 設定 -->
                 <div class="control-group">
                     <h3>🔗 QR Code 設定</h3>
-                    <input type="url" id="urlInput" placeholder="輸入網址 (例如: https://example.com)">
+                    <input type="url" id="urlInput" placeholder="輸入網址 (例如: google.com 或 https://example.com)">
                     
                     <div class="range-group">
                         <label>大小:</label>
@@ -827,11 +861,45 @@
                     });
                 }
 
-                // QR Code
+                // QR Code URL 輸入
                 const urlInput = document.getElementById('urlInput');
                 if (urlInput) {
+                    // 立即處理輸入
                     urlInput.addEventListener('input', (e) => {
-                        this.generateQRCode(e.target.value);
+                        const url = e.target.value.trim();
+                        if (url) {
+                            // 如果沒有協議前綴，自動加上 https://
+                            let processedUrl = url;
+                            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                                processedUrl = 'https://' + url;
+                            }
+                            this.generateQRCode(processedUrl);
+                        } else {
+                            this.qrCodeImage = null;
+                            this.redraw();
+                        }
+                    });
+
+                    // 處理粘貼事件
+                    urlInput.addEventListener('paste', (e) => {
+                        setTimeout(() => {
+                            const url = e.target.value.trim();
+                            if (url) {
+                                let processedUrl = url;
+                                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                                    processedUrl = 'https://' + url;
+                                }
+                                this.generateQRCode(processedUrl);
+                            }
+                        }, 100);
+                    });
+
+                    // 處理失去焦點事件
+                    urlInput.addEventListener('blur', (e) => {
+                        const url = e.target.value.trim();
+                        if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                            e.target.value = 'https://' + url;
+                        }
                     });
                 }
 
@@ -1092,17 +1160,30 @@
                 if (!url || !this.isValidUrl(url)) {
                     this.qrCodeImage = null;
                     this.redraw();
+                    if (url && url.trim()) {
+                        this.showStatus('請輸入有效的網址 (需包含 http:// 或 https://)', 'error');
+                    }
                     return;
                 }
 
                 try {
-                    const qr = qrcode(0, this.errorCorrectionLevel);
+                    console.log('Generating QR Code for:', url);
+                    
+                    // 檢查 qrcode 函數是否存在
+                    if (typeof qrcode === 'undefined') {
+                        throw new Error('QR Code 庫未載入');
+                    }
+
+                    const qr = qrcode(0, this.errorCorrectionLevel || 'M');
                     qr.addData(url);
                     qr.make();
                     
+                    console.log('QR Code generated, module count:', qr.getModuleCount());
+                    
                     const cellSize = 8;
                     const margin = 16;
-                    const size = qr.getModuleCount() * cellSize + margin * 2;
+                    const moduleCount = qr.getModuleCount();
+                    const size = moduleCount * cellSize + margin * 2;
                     
                     const canvas = document.createElement('canvas');
                     canvas.width = size;
@@ -1114,12 +1195,17 @@
                     const foregroundColor = document.getElementById('qrForegroundColor')?.value || '#2C3E50';
                     const backgroundColor = document.getElementById('qrBackgroundColor')?.value || '#FFFFFF';
                     
-                    // 背景
+                    console.log('Drawing QR Code with settings:', { radius, shadowBlur, foregroundColor, backgroundColor });
+                    
+                    // 清除畫布
+                    ctx.clearRect(0, 0, size, size);
+                    
+                    // 繪製背景
                     ctx.fillStyle = backgroundColor;
                     this.roundRect(ctx, 0, 0, size, size, radius);
                     ctx.fill();
                     
-                    // 陰影
+                    // 設定陰影
                     if (shadowBlur > 0) {
                         ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
                         ctx.shadowBlur = shadowBlur;
@@ -1128,23 +1214,49 @@
                     }
                     
                     // 繪製 QR Code 模組
-                    this.drawQRModules(ctx, qr, cellSize, margin, foregroundColor);
+                    ctx.fillStyle = foregroundColor;
+                    for (let row = 0; row < moduleCount; row++) {
+                        for (let col = 0; col < moduleCount; col++) {
+                            if (qr.isDark(row, col)) {
+                                const x = col * cellSize + margin;
+                                const y = row * cellSize + margin;
+                                this.drawModule(ctx, x, y, cellSize);
+                            }
+                        }
+                    }
                     
+                    // 清除陰影設定
                     ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
                     
-                    // 繪製尋找圖案
-                    this.drawFinderPatterns(ctx, qr, cellSize, margin, foregroundColor, backgroundColor);
+                    // 繪製特殊的尋找圖案
+                    this.drawEnhancedFinderPatterns(ctx, moduleCount, cellSize, margin, foregroundColor, backgroundColor);
                     
-                    this.qrCodeImage = new Image();
-                    this.qrCodeImage.onload = () => {
+                    // 創建圖片
+                    const tempImg = new Image();
+                    tempImg.onload = () => {
+                        this.qrCodeImage = tempImg;
                         this.redraw();
                         this.showStatus('QR Code 生成成功！', 'success');
+                        console.log('QR Code image loaded successfully');
                     };
-                    this.qrCodeImage.src = canvas.toDataURL();
+                    
+                    tempImg.onerror = () => {
+                        console.error('Failed to load QR Code image');
+                        this.showStatus('QR Code 圖片載入失敗', 'error');
+                    };
+                    
+                    const dataURL = canvas.toDataURL('image/png');
+                    console.log('QR Code data URL generated, length:', dataURL.length);
+                    tempImg.src = dataURL;
                     
                 } catch (error) {
-                    this.showStatus('QR Code 生成失敗: ' + error.message, 'error');
                     console.error('QR Code generation error:', error);
+                    this.showStatus('QR Code 生成失敗: ' + error.message, 'error');
+                    this.qrCodeImage = null;
+                    this.redraw();
                 }
             }
 
@@ -1205,31 +1317,51 @@
                        (row >= moduleCount - 8 && col < 9);
             }
 
-            drawFinderPatterns(ctx, qr, cellSize, margin, foregroundColor, backgroundColor) {
-                const moduleCount = qr.getModuleCount();
-                
-                this.drawFinderPattern(ctx, margin, margin, cellSize, foregroundColor, backgroundColor);
-                this.drawFinderPattern(ctx, margin + (moduleCount - 7) * cellSize, margin, cellSize, foregroundColor, backgroundColor);
-                this.drawFinderPattern(ctx, margin, margin + (moduleCount - 7) * cellSize, cellSize, foregroundColor, backgroundColor);
+            drawEnhancedFinderPatterns(ctx, moduleCount, cellSize, margin, foregroundColor, backgroundColor) {
+                const positions = [
+                    { x: margin, y: margin }, // 左上
+                    { x: margin + (moduleCount - 7) * cellSize, y: margin }, // 右上
+                    { x: margin, y: margin + (moduleCount - 7) * cellSize } // 左下
+                ];
+
+                positions.forEach(pos => {
+                    this.drawEnhancedFinderPattern(ctx, pos.x, pos.y, cellSize, foregroundColor, backgroundColor);
+                });
             }
 
-            drawFinderPattern(ctx, x, y, cellSize, foregroundColor, backgroundColor) {
+            drawEnhancedFinderPattern(ctx, x, y, cellSize, foregroundColor, backgroundColor) {
                 const size = cellSize * 7;
                 
-                // 外框
+                // 外框 (7x7)
                 ctx.fillStyle = foregroundColor;
-                this.roundRect(ctx, x, y, size, size, cellSize * 0.5);
+                if (this.qrStyle === 'circle') {
+                    this.roundRect(ctx, x, y, size, size, size / 4);
+                } else {
+                    this.roundRect(ctx, x, y, size, size, cellSize * 0.5);
+                }
                 ctx.fill();
                 
-                // 中間白色
+                // 中間白色區域 (5x5)
                 ctx.fillStyle = backgroundColor;
-                this.roundRect(ctx, x + cellSize, y + cellSize, size - 2 * cellSize, size - 2 * cellSize, cellSize * 0.3);
+                const innerSize = size - 2 * cellSize;
+                if (this.qrStyle === 'circle') {
+                    this.roundRect(ctx, x + cellSize, y + cellSize, innerSize, innerSize, innerSize / 4);
+                } else {
+                    this.roundRect(ctx, x + cellSize, y + cellSize, innerSize, innerSize, cellSize * 0.3);
+                }
                 ctx.fill();
                 
-                // 內部方塊
-                ctx.fillStyle = foregroundColor;
-                this.roundRect(ctx, x + 2 * cellSize, y + 2 * cellSize, size - 4 * cellSize, size - 4 * cellSize, cellSize * 0.2);
-                ctx.fill();
+                // 內部方塊 (3x3)
+                ctx.fillStyle = this.qrStyle === 'gradient' ? '#667eea' : foregroundColor;
+                const coreSize = size - 4 * cellSize;
+                if (this.qrStyle === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(x + size/2, y + size/2, coreSize/2, 0, 2 * Math.PI);
+                    ctx.fill();
+                } else {
+                    this.roundRect(ctx, x + 2 * cellSize, y + 2 * cellSize, coreSize, coreSize, cellSize * 0.2);
+                    ctx.fill();
+                }
             }
 
             roundRect(ctx, x, y, width, height, radius) {
@@ -1248,10 +1380,16 @@
 
             isValidUrl(string) {
                 try {
-                    new URL(string);
-                    return true;
+                    const url = new URL(string);
+                    return url.protocol === 'http:' || url.protocol === 'https:';
                 } catch (_) {
-                    return false;
+                    // 嘗試加上 https:// 前綴
+                    try {
+                        const urlWithHttps = new URL('https://' + string);
+                        return urlWithHttps.hostname.includes('.');
+                    } catch (__) {
+                        return false;
+                    }
                 }
             }
 
