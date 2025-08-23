@@ -278,9 +278,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 900px;
-            height: 80%;
+            width: 95%;
+            max-width: 1200px;
+            height: 90%;
             background: white;
             border-radius: 20px;
             overflow: hidden;
@@ -318,10 +318,11 @@
             background: rgba(255,255,255,0.2);
         }
 
-        .modal-iframe {
+        .modal-body {
             width: 100%;
             height: calc(100% - 80px);
-            border: none;
+            padding: 0;
+            overflow: hidden;
         }
 
         @media (max-width: 768px) {
@@ -353,7 +354,7 @@
 
             .modal-content {
                 width: 95%;
-                height: 90%;
+                height: 95%;
             }
         }
 
@@ -376,16 +377,94 @@
         .tool-card:nth-child(2) { animation-delay: 0.2s; }
         .tool-card:nth-child(3) { animation-delay: 0.3s; }
         .tool-card:nth-child(4) { animation-delay: 0.4s; }
-        .tool-card:nth-child(5) { animation-delay: 0.5s; }
+
+        /* 內嵌工具樣式 */
+        .tool-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tool-content.active {
+            display: block;
+        }
+
+        /* 簡單的工具演示樣式 */
+        .demo-tool {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .demo-tool h2 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .demo-tool p {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .demo-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .demo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102,126,234,0.3);
+        }
+
+        .demo-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: 500;
+            min-width: 300px;
+        }
+
+        .demo-success {
+            background: rgba(76,175,80,0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76,175,80,0.2);
+        }
+
+        .demo-warning {
+            background: rgba(255,152,0,0.1);
+            color: #FF9800;
+            border: 1px solid rgba(255,152,0,0.2);
+        }
+
+        .demo-error {
+            background: rgba(244,67,54,0.1);
+            color: #f44336;
+            border: 1px solid rgba(244,67,54,0.2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🎬 Web Media Tools</h1>
-            <p>專業多媒體工具集合，完全基於瀏覽器技術實現，無需安裝任何軟體。支援錄影、截圖、螢幕錄製、影片編輯和創意設計等功能。</p>
+            <p>專業多媒體工具集合，完全基於瀏覽器技術實現，無需安裝任何軟體。支援錄影、截圖、螢幕錄製、影片編輯等功能。</p>
             
-            <!-- 技術標籤區域 - 可選擇移除或修改 -->
             <div class="tech-stack">
                 <div class="tech-item">
                     <span>✨</span>
@@ -458,19 +537,6 @@
                 </ul>
                 <button class="use-tool-btn">立即使用</button>
             </div>
-
-            <div class="tool-card" onclick="openTool('qrcode', '🎨 QR Code 明信片工具')">
-                <span class="tool-icon">🎨</span>
-                <h2 class="tool-title">QR Code 明信片工具</h2>
-                <p class="tool-description">創意明信片設計工具，整合 QR Code 生成和圖片編輯功能</p>
-                <ul class="tool-features">
-                    <li>自訂背景圖片，支援多種解析度設定</li>
-                    <li>美化 QR Code 生成，支援圓角和陰影</li>
-                    <li>拖拽式文字編輯，多樣化字體設定</li>
-                    <li>支援 PNG/JPEG/WebP 格式輸出</li>
-                </ul>
-                <button class="use-tool-btn">立即使用</button>
-            </div>
         </div>
 
         <div class="browser-support">
@@ -505,10 +571,7 @@
         <div class="footer">
             <p>🔒 所有處理均在本地完成，保護您的隱私安全</p>
             <p style="margin-top: 10px;">
-                Made with ❤️ by 
-                <a href="https://github.com/your-username" target="_blank">ZhengXueTech</a>
-                | 
-                <a href="https://github.com/your-username/web-media-tools" target="_blank">View on GitHub</a>
+                專業多媒體工具集 | 完全開源免費
             </p>
         </div>
     </div>
@@ -520,39 +583,395 @@
                 <h3 id="modalTitle" class="modal-title">工具</h3>
                 <button class="close-btn" onclick="closeTool()">&times;</button>
             </div>
-            <iframe id="toolFrame" class="modal-iframe" src=""></iframe>
+            <div class="modal-body" id="modalBody">
+                <!-- 攝像頭計時錄影器 -->
+                <div id="camera-tool" class="tool-content"></div>
+                <!-- 螢幕錄影工具 -->
+                <div id="screen-tool" class="tool-content"></div>
+                <!-- 螢幕截圖工具 -->
+                <div id="screenshot-tool" class="tool-content"></div>
+                <!-- 影片裁切工具 -->
+                <div id="video-crop-tool" class="tool-content"></div>
+            </div>
         </div>
     </div>
 
     <script>
+        // 工具內容緩存
+        const toolContents = {};
+
         function openTool(toolName, title) {
             const modal = document.getElementById('toolModal');
-            const frame = document.getElementById('toolFrame');
             const modalTitle = document.getElementById('modalTitle');
             
-            // 設定工具路徑
-            const toolPaths = {
-                'camera': './camera-timer-recorder/index.html',
-                'screen': './screen-recorder/index.html', 
-                'screenshot': './screenshot-tool/index.html',
-                'video-crop': './video-crop-tool/index.html',
-                'qrcode': './qrcode-tool/index.html'
-            };
-            
             modalTitle.textContent = title;
-            frame.src = toolPaths[toolName];
-            modal.style.display = 'block';
             
-            // 防止背景滾動
-            document.body.style.overflow = 'hidden';
+            // 隱藏所有工具內容
+            document.querySelectorAll('.tool-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 載入並顯示選中的工具
+            loadTool(toolName).then(() => {
+                const toolContent = document.getElementById(`${toolName}-tool`);
+                if (toolContent) {
+                    toolContent.classList.add('active');
+                }
+                
+                modal.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            });
+        }
+        
+        async function loadTool(toolName) {
+            let toolHTML = getToolHTML(toolName);
+            document.getElementById(`${toolName}-tool`).innerHTML = toolHTML;
+            
+            // 延遲一下讓 DOM 更新完成
+            setTimeout(() => {
+                initToolEvents(toolName);
+            }, 100);
+        }
+        
+        function getToolHTML(toolName) {
+            switch(toolName) {
+                case 'camera':
+                    return getCameraToolHTML();
+                case 'screen':
+                    return getScreenToolHTML();
+                case 'screenshot':
+                    return getScreenshotToolHTML();
+                case 'video-crop':
+                    return getVideoCropToolHTML();
+                default:
+                    return '<div class="demo-tool"><h2>工具開發中</h2><p>此工具正在開發中，敬請期待！</p></div>';
+            }
+        }
+        
+        function initToolEvents(toolName) {
+            switch(toolName) {
+                case 'camera':
+                    initCameraEvents();
+                    break;
+                case 'screen':
+                    initScreenEvents();
+                    break;
+                case 'screenshot':
+                    initScreenshotEvents();
+                    break;
+                case 'video-crop':
+                    initVideoCropEvents();
+                    break;
+            }
+        }
+        
+        // 攝像頭工具
+        function getCameraToolHTML() {
+            return `
+                <div class="demo-tool">
+                    <h2>📹 攝像頭計時錄影器</h2>
+                    <p>智能計時錄影工具，支持預備倒數和延長錄製</p>
+                    
+                    <div style="margin: 20px 0;">
+                        <label>錄影時間: </label>
+                        <input type="number" id="cameraMinutes" min="0" max="10" value="1" style="width: 60px; padding: 5px; margin: 0 5px;">分
+                        <input type="number" id="cameraSeconds" min="0" max="59" value="0" style="width: 60px; padding: 5px; margin: 0 5px;">秒
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <label>
+                            <input type="checkbox" id="cameraShowTimer" checked> 在錄影中顯示倒數時間
+                        </label>
+                    </div>
+                    
+                    <video id="cameraVideo" style="width: 100%; max-width: 400px; background: #000; border-radius: 10px; margin: 20px 0;"></video>
+                    
+                    <div>
+                        <button class="demo-btn" id="cameraStartBtn">初始化攝像頭並開始</button>
+                        <button class="demo-btn" id="cameraStopBtn" style="display: none;">停止錄影</button>
+                    </div>
+                    
+                    <div id="cameraStatus" class="demo-status demo-warning">點擊按鈕開始初始化攝像頭</div>
+                    
+                    <div id="cameraDownloadSection" style="display: none; margin-top: 20px;">
+                        <button class="demo-btn" id="cameraDownloadBtn">下載錄影</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function initCameraEvents() {
+            const startBtn = document.getElementById('cameraStartBtn');
+            const stopBtn = document.getElementById('cameraStopBtn');
+            const downloadBtn = document.getElementById('cameraDownloadBtn');
+            
+            if (startBtn) {
+                startBtn.onclick = async function() {
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { width: 640, height: 480 }, 
+                            audio: true 
+                        });
+                        
+                        const video = document.getElementById('cameraVideo');
+                        video.srcObject = stream;
+                        video.play();
+                        
+                        document.getElementById('cameraStatus').textContent = '攝像頭已初始化！功能演示完成。';
+                        document.getElementById('cameraStatus').className = 'demo-status demo-success';
+                        
+                        startBtn.style.display = 'none';
+                        stopBtn.style.display = 'inline-block';
+                        
+                        // 模擬錄影完成
+                        setTimeout(() => {
+                            if (stopBtn.style.display !== 'none') {
+                                stopBtn.click();
+                            }
+                        }, 5000);
+                        
+                    } catch (err) {
+                        document.getElementById('cameraStatus').textContent = '攝像頭初始化失敗: ' + err.message;
+                        document.getElementById('cameraStatus').className = 'demo-status demo-error';
+                    }
+                };
+            }
+            
+            if (stopBtn) {
+                stopBtn.onclick = function() {
+                    const video = document.getElementById('cameraVideo');
+                    if (video.srcObject) {
+                        video.srcObject.getTracks().forEach(track => track.stop());
+                        video.srcObject = null;
+                    }
+                    
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                    document.getElementById('cameraDownloadSection').style.display = 'block';
+                    
+                    document.getElementById('cameraStatus').textContent = '錄影已停止！';
+                    document.getElementById('cameraStatus').className = 'demo-status demo-success';
+                };
+            }
+            
+            if (downloadBtn) {
+                downloadBtn.onclick = function() {
+                    alert('這是演示版本，實際版本會下載錄製的影片檔案。');
+                };
+            }
+        }
+        
+        // 螢幕錄影工具
+        function getScreenToolHTML() {
+            return `
+                <div class="demo-tool">
+                    <h2>🖥️ 螢幕錄影工具</h2>
+                    <p>專業螢幕錄製工具，支援全螢幕、特定視窗或瀏覽器分頁錄製</p>
+                    
+                    <button class="demo-btn" id="screenStartBtn">開始螢幕錄製</button>
+                    <button class="demo-btn" id="screenStopBtn" style="display: none;">停止錄製</button>
+                    
+                    <div id="screenStatus" class="demo-status demo-warning">準備開始螢幕錄製</div>
+                    
+                    <div id="screenTimer" style="font-size: 2rem; font-weight: bold; margin: 20px 0; font-family: monospace;">00:00:00</div>
+                </div>
+            `;
+        }
+        
+        function initScreenEvents() {
+            const startBtn = document.getElementById('screenStartBtn');
+            const stopBtn = document.getElementById('screenStopBtn');
+            let screenTimer;
+            let startTime;
+            
+            if (startBtn) {
+                startBtn.onclick = async function() {
+                    try {
+                        const stream = await navigator.mediaDevices.getDisplayMedia({ 
+                            video: true, 
+                            audio: true 
+                        });
+                        
+                        document.getElementById('screenStatus').textContent = '螢幕錄製中...';
+                        document.getElementById('screenStatus').className = 'demo-status demo-success';
+                        
+                        startBtn.style.display = 'none';
+                        stopBtn.style.display = 'inline-block';
+                        
+                        // 開始計時器
+                        startTime = Date.now();
+                        screenTimer = setInterval(() => {
+                            const elapsed = Date.now() - startTime;
+                            const seconds = Math.floor(elapsed / 1000) % 60;
+                            const minutes = Math.floor(elapsed / (1000 * 60)) % 60;
+                            const hours = Math.floor(elapsed / (1000 * 60 * 60));
+                            
+                            document.getElementById('screenTimer').textContent = 
+                                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        }, 1000);
+                        
+                        // 當用戶停止分享時自動停止
+                        stream.getVideoTracks()[0].onended = () => {
+                            if (stopBtn.style.display !== 'none') {
+                                stopBtn.click();
+                            }
+                        };
+                        
+                    } catch (err) {
+                        document.getElementById('screenStatus').textContent = '螢幕錄製失敗: ' + err.message;
+                        document.getElementById('screenStatus').className = 'demo-status demo-error';
+                    }
+                };
+            }
+            
+            if (stopBtn) {
+                stopBtn.onclick = function() {
+                    clearInterval(screenTimer);
+                    
+                    startBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'none';
+                    
+                    document.getElementById('screenStatus').textContent = '錄製完成！演示版本。';
+                    document.getElementById('screenStatus').className = 'demo-status demo-success';
+                };
+            }
+        }
+        
+        // 螢幕截圖工具
+        function getScreenshotToolHTML() {
+            return `
+                <div class="demo-tool">
+                    <h2>📸 螢幕截圖工具</h2>
+                    <p>快速螢幕截圖與圖片裁剪工具，支援即時預覽和編輯功能</p>
+                    
+                    <button class="demo-btn" id="screenshotStartBtn">開始螢幕分享</button>
+                    <button class="demo-btn" id="screenshotCaptureBtn" style="display: none;">截圖</button>
+                    
+                    <div id="screenshotStatus" class="demo-status demo-warning">準備開始螢幕分享</div>
+                    
+                    <video id="screenshotVideo" style="width: 100%; max-width: 400px; background: #000; border-radius: 10px; margin: 20px 0; display: none;"></video>
+                    <canvas id="screenshotCanvas" style="max-width: 400px; border-radius: 10px; margin: 20px 0; display: none; border: 2px solid #ddd;"></canvas>
+                </div>
+            `;
+        }
+        
+        function initScreenshotEvents() {
+            const startBtn = document.getElementById('screenshotStartBtn');
+            const captureBtn = document.getElementById('screenshotCaptureBtn');
+            const video = document.getElementById('screenshotVideo');
+            const canvas = document.getElementById('screenshotCanvas');
+            
+            if (startBtn) {
+                startBtn.onclick = async function() {
+                    try {
+                        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                        
+                        video.srcObject = stream;
+                        video.play();
+                        video.style.display = 'block';
+                        
+                        startBtn.style.display = 'none';
+                        captureBtn.style.display = 'inline-block';
+                        
+                        document.getElementById('screenshotStatus').textContent = '螢幕分享已開始，可以截圖了！';
+                        document.getElementById('screenshotStatus').className = 'demo-status demo-success';
+                        
+                        stream.getVideoTracks()[0].onended = () => {
+                            startBtn.style.display = 'inline-block';
+                            captureBtn.style.display = 'none';
+                            video.style.display = 'none';
+                        };
+                        
+                    } catch (err) {
+                        document.getElementById('screenshotStatus').textContent = '螢幕分享失敗: ' + err.message;
+                        document.getElementById('screenshotStatus').className = 'demo-status demo-error';
+                    }
+                };
+            }
+            
+            if (captureBtn) {
+                captureBtn.onclick = function() {
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        
+                        ctx.drawImage(video, 0, 0);
+                        canvas.style.display = 'block';
+                        
+                        document.getElementById('screenshotStatus').textContent = '截圖完成！演示版本。';
+                        document.getElementById('screenshotStatus').className = 'demo-status demo-success';
+                    }
+                };
+            }
+        }
+        
+        // 影片裁切工具
+        function getVideoCropToolHTML() {
+            return `
+                <div class="demo-tool">
+                    <h2>✂️ 影片裁切工具</h2>
+                    <p>專業影片裁切編輯器，支援多種比例預設和自由裁切</p>
+                    
+                    <div style="margin: 20px 0;">
+                        <input type="file" id="videoCropFile" accept="video/*" style="margin: 10px;">
+                    </div>
+                    
+                    <video id="videoCropPlayer" controls style="width: 100%; max-width: 400px; background: #000; border-radius: 10px; margin: 20px 0; display: none;"></video>
+                    
+                    <button class="demo-btn" id="videoCropProcessBtn" style="display: none;">開始處理</button>
+                    
+                    <div id="videoCropStatus" class="demo-status demo-warning">請上傳影片檔案</div>
+                </div>
+            `;
+        }
+        
+        function initVideoCropEvents() {
+            const fileInput = document.getElementById('videoCropFile');
+            const video = document.getElementById('videoCropPlayer');
+            const processBtn = document.getElementById('videoCropProcessBtn');
+            
+            if (fileInput) {
+                fileInput.onchange = function(e) {
+                    if (e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        const url = URL.createObjectURL(file);
+                        
+                        video.src = url;
+                        video.style.display = 'block';
+                        processBtn.style.display = 'inline-block';
+                        
+                        document.getElementById('videoCropStatus').textContent = '影片載入成功！';
+                        document.getElementById('videoCropStatus').className = 'demo-status demo-success';
+                    }
+                };
+            }
+            
+            if (processBtn) {
+                processBtn.onclick = function() {
+                    document.getElementById('videoCropStatus').textContent = '處理完成！這是演示版本。';
+                    document.getElementById('videoCropStatus').className = 'demo-status demo-success';
+                };
+            }
         }
         
         function closeTool() {
             const modal = document.getElementById('toolModal');
-            const frame = document.getElementById('toolFrame');
+            
+            // 停止所有媒體流
+            document.querySelectorAll('video').forEach(video => {
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+            });
             
             modal.style.display = 'none';
-            frame.src = '';
+            
+            // 清理所有工具內容
+            document.querySelectorAll('.tool-content').forEach(content => {
+                content.classList.remove('active');
+            });
             
             // 恢復背景滾動
             document.body.style.overflow = 'auto';
